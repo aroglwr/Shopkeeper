@@ -1,0 +1,14 @@
+do runes command
+maybe abilities - probably no
+live game feature
+ranked stats
+server status maybe - probably no
+add documentation to all functions
+kag server list
+kag clan data
+completely optimise steam section
+
+hypixel api
+
+
+http://ddragon.leagueoflegends.com/cdn/10.16.1/data/en_US/runesReforged.json
