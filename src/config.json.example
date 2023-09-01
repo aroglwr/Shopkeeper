@@ -1,0 +1,29 @@
+{
+    "token":"DISCORD_TOKEN_HERE",
+    "steam_token":"STEAM_TOKEN_HERE",
+    "riot_token": "RIOT_TOKEN_HERE",
+    "riot":{
+        "leagueSummonerSpells":{
+            "1":"<:cleanse:1146196429312905287>",
+            "4":"<:flash:1146196463089614978>",
+            "21":"<:barrier:1146196423369560214>",
+            "14":"<:ignite:1146196421406638150>",
+            "3":"<:exhaust:1146196462020075550>",
+            "6":"<:ghost:1146196413965947051>",
+            "7":"<:heal:1146196415152918658>",
+            "13":"<:clarity:1146196419938627637>",
+            "11":"<:smite:1146196417111666758>",
+            "32":"<:mark:1146196425475117197>",
+            "12":"<:teleport:1146196418328006797>"
+        }
+    },
+    "games":[
+        "GAME_LIST_HERE"
+    ],
+    "gifs":[
+        "GIFS_HERE"
+    ],
+    "crunch":[
+        "GIFS_HERE"
+    ]
+}
