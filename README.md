@@ -9,7 +9,7 @@ This is a Discord bot built on [Discord.py](https://discordpy.readthedocs.io/en/
 ## Features
 * Pull various data from Steam API: user & game data
 * View mastery data and live game data for League of Legends
-* Pull stats from [https://kagstats.com](KAGstats) for King Arthur's Gold
+* Pull stats from [KAGstats](https://kagstats.com) for King Arthur's Gold
 
 ## Requirements
 * [Discord.py](https://discordpy.readthedocs.io/en/stable/)
