@@ -1,5 +1,4 @@
 oopyeepy.code-workspace
-LICENSE
 tests/Input Stuff/input_test.py
 tests/_old/SteamAPI/__pycache__/sale.cpython-310.pyc
 tests/_old/SteamAPI/__pycache__/bot.cpython-310.pyc
@@ -1381,3 +1380,4 @@ src/API/__pycache__/general.cpython-310.pyc
 src/API/__pycache__/kag.cpython-310.pyc
 src/API/__pycache__/league.cpython-310.pyc
 src/API/__pycache__/sale.cpython-310.pyc
+src/config.json
