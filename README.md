@@ -14,5 +14,9 @@ This is a Discord bot built on [Discord.py](https://discordpy.readthedocs.io/en/
 ## Requirements
 * [Discord.py](https://discordpy.readthedocs.io/en/stable/)
 
+### Generating API keys
+* [Steam](https://steamcommunity.com/dev)
+* [Riot](https://developer.riotgames.com/)
+
 ## License
 This program is licensed under the MIT License.
