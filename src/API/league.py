@@ -1,7 +1,7 @@
 import random
 from API.general import getJSON_filter as getJSON
 from API.general import getJSON_local as getJSON_local
-
+from API.general import timeElapsed
 
 def getLatestPatch():
     """ Gets latest league patch e.g. 13.16.1
@@ -268,19 +268,23 @@ def getLiveGame(riot_token, account_id, region, summonerEmojiList):
         print("recursion done")
         summonerEmoji = summonerEmojiList[str(summoners[0])] , summonerEmojiList[str(summoners[1])]
 
+        print("try time")
+        gameStartTime = int(str(liveData["gameStartTime"])[:-3])
+        print(gameStartTime)
+        gameDuration = timeElapsed(gameStartTime)
+        print("time done")
+
+
         bansBlue = []
         bansRed = []
-        #banTeamB = []
         try:
             for i in range(5):
                 bansBlue.append(getChampionName(liveData["bannedChampions"][i]["championId"]))
-                #banTeamB.append(liveData["bannedChampions"][i]["teamId"])
             
             
             #banTeamR = []
             for i in range(5, 10):
                 bansRed.append(getChampionName(liveData["bannedChampions"][i]["championId"]))
-                #banTeamR.append(liveData["bannedChampions"][i]["teamId"])
         except:
             print("skipped recursion")
             bansBlue = ["None"]
@@ -293,10 +297,11 @@ def getLiveGame(riot_token, account_id, region, summonerEmojiList):
         champion_icon = None
         bans = None
         summonerEmoji = None
+        gameDuration = None
 
     
 
-    return isInGame, playerList, mapInfo, champion, bans, champion_icon, summonerEmoji
+    return isInGame, playerList, mapInfo, champion, bans, champion_icon, summonerEmoji, gameDuration
 
 def queueData(id):
 
@@ -320,3 +325,6 @@ def queueData(id):
 def getRankedData(riot_token, account_id, region):
 
     return ""
+
+
+#print(dateConvert(1693530094594))

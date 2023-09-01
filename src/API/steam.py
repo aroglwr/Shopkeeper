@@ -1,36 +1,8 @@
 import discord
-import datetime
 import math
 from API.general import getJSON as getJSON
 from API.general import getJSON_local as getJSON_local
-
-def dateConvert(epochDate):
-    """ Converts timestamp from epoch to standard
-
-    Parameters
-    ----------
-    epochDate : int
-        Date in epoch form
-
-    Returns
-    -------
-    date_time : datetime obj
-        Formatted for datetime package
-    
-    formatted_date : str
-        Timestamp in nice format
-    
-    formatted_date_alt : str
-        Alternative version of formatted_date
-    
-    date_time_alt : str
-        Alternative datetime obj
-    """
-    date_time = datetime.datetime.fromtimestamp(epochDate)
-    date_time_alt = date_time.strftime("%Y-%m-%d")
-    formatted_date = date_time.strftime("%B %d, %Y, %I:%M %p %ZGMT,")
-    formatted_date_alt = date_time.strftime("%B %d, %Y")
-    return date_time, formatted_date, formatted_date_alt, date_time_alt
+from API.general import dateConvert
 
 
 def inputType(input):

@@ -213,12 +213,16 @@ async def leaguelivegame(interaction: discord.Interaction, summoner_name: str, r
     liveGameData = league.getLiveGame(riot_token, summoner_data[5], region, summonerEmoji)
 
     if liveGameData[0] == True:
-        embed=discord.Embed(title=f'View on OP.GG (Spectate)', url=f'https://www.op.gg/summoners/{region}/{summoner_data[6]}/ingame', description=f'{summoner_data[0]} is playing {liveGameData[3]} in {liveGameData[2][1]} on {liveGameData[2][0]}', color=0x0000ff)
+        embed=discord.Embed(title=f'View on OP.GG (Spectate)', url=f'https://www.op.gg/summoners/{region}/{summoner_data[6]}/ingame', description=f'{summoner_data[0]} is playing {liveGameData[3]} in {liveGameData[2][1]} on {liveGameData[2][0]}\nSummoner has been in game for {liveGameData[7][0]} minutes {liveGameData[7][1]} seconds', color=0x0000ff)
         
-        embed.add_field(name="Summoner Spells", value=f'{liveGameData[6][0]} {liveGameData[6][1]}')
-        embed.add_field(name="Banned Champions", value=f'{general.unpackList(liveGameData[4][0]) + general.unpackList(liveGameData[4][1])}')
+        embed.add_field(name="Summoner Spells", value=f'{liveGameData[6][0]} {liveGameData[6][1]}', inline=True)
+        embed.add_field(name="primary rune", value='data', inline=True)
+        embed.add_field(name="secondary rune", value='data', inline=True)
+        embed.add_field(name="Banned Champions", value=f'{general.unpackList(liveGameData[4][0]) + general.unpackList(liveGameData[4][1])}', inline=True)
+        embed.add_field(name="", value=f'', inline=True)
+        embed.add_field(name="", value=f'', inline=True)
+
         embed.set_author(name=f'{summoner_data[0]} ({region.upper()})', icon_url="https://static.wikia.nocookie.net/leagueoflegends/images/c/c0/LoL_ping_missing.png")
-        
         embed.set_thumbnail(url=liveGameData[5])
         
         

@@ -1,8 +1,6 @@
 from API.general import getJSON_filter
 import random as r
 
-#https://kagstats.com/api/players/lookup/{name}
-
 def getWebStatus():
     apiStatus = getJSON_filter("https://kagstats.com/api/status")
 
@@ -12,7 +10,6 @@ def getWebStatus():
     apiVer = apiStatus["version"]
 
     return playerCount, kills, serverCount, apiVer
-
 
 def searchPlayer(playerName):
     blank = playerName.find(" ")
@@ -26,8 +23,6 @@ def searchPlayer(playerName):
         return result["id"]
     except:
         pass
-    
-
 
 def getPlayerData(playerId):
 
@@ -46,16 +41,6 @@ def getPlayerData(playerId):
         return userExists, username, displayname, clantag, hasGold, avatar, killStats, url
     except:
         return None
-    
-
-    
-"""
-def getPlayerStats(killStatsRaw):
-    suicides, teamKills, archerStats, builderStats, knightStats, totalStats = killStatsRaw
-
-
-    return """
-
 
 def getServerList():
     servers = getJSON_filter("https://kagstats.com/api/servers")
