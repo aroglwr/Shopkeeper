@@ -1,7 +1,7 @@
 {
-    "token":"MTA0MjQ1NTQ4MzcwMjg0OTY3Nw.G2k-6y.XltW9UYJHpZdfUxXXiePI27qX9a5OJiH_MHc6o",
-    "steam_token":"384800104C59A6B27A04356286C8FE44",
-    "riot_token": "RGAPI-37ae5097-8388-4338-92e6-651d2429f826",
+    "token":"DISCORD_TOKEN_HERE",
+    "steam_token":"STEAM_TOKEN_HERE",
+    "riot_token": "RIOT_TOKEN_HERE",
     "riot":{
         "leagueSummonerSpells":{
             "1":"<:cleanse:1146196429312905287>",
@@ -18,55 +18,12 @@
         }
     },
     "games":[
-        "Bloons TD 6",
-        "with Steam API",
-        "with Riot API",
-        "with KAGstats API",
-        "FPS Chess",
-        "Animal Crossing New Leaf",
-        "Terraria",
-        "Stardew Valley",
-        "Hades",
-        "Chess",
-        "Stray",
-        "Super Smash Bros. Melee",
-        "Minecraft",
-        "Ratchet & Clank 3",
-        "SUPERHOT",
-        "DOOM Eternal",
-        "Fallout 4",
-        "The Escapists",
-        "Just Cause 2",
-        "Slippi",
-        "Prison Architect",
-        "Half-Life",
-        "LEGO Batman",
-        "The Sims 4",
-        "どうぶつの森",
-        "Animal Crossing Wild World",
-        "ARAM",
-        "Call of Duty: Black Ops III",
-        "King Arthur's Gold"
+        "GAME_LIST_HERE"
     ],
     "gifs":[
-        "https://tenor.com/view/dog-gif-26131298",
-        "https://tenor.com/view/balls-almungusgaming-gif-22034423",
-        "https://tenor.com/view/luigi-super-mario-mario-luigi-mario-n64-gif-25531465",
-        "https://media.discordapp.net/attachments/609073992833433620/647839128754323491/Prop.gif",
-        "https://tenor.com/view/my-honest-reaction-kumala-la-kumala-la-savesta-kumala-my-honest-gif-26073681",
-        "https://tenor.com/view/rat-moment-rat-gif-22816005",
-        "https://media.discordapp.net/attachments/659630509894271001/819786564866932766/image0_2.gif",
-        "https://tenor.com/view/me-reacting-with-skull-gif-25864356",
-        "https://ia904505.us.archive.org/7/items/rotatingfood5/giphy%20-%202021-06-01T145829.089.gif",
-        "https://media.discordapp.net/attachments/868945734601433178/887040743615635456/palestine.gif",
-        "https://tenor.com/view/shower-duolingo-please-take-a-shower-immediately-take-a-shower-gif-23968576",
-        "https://tenor.com/view/meme-balls-discord-funny-gif-25072977",
-        "https://tenor.com/view/minecraft-minecraft-memes-moobloom-cow-meme-gif-24658873",
-        "https://tenor.com/view/discord-discord-compatible-cube-gorilla-frog-gorilla-gif-25209057"
+        "GIFS_HERE"
     ],
     "crunch":[
-        "https://tenor.com/view/ryback-eating-ruffles-potato-chips-rayback-gif-18436223",
-        "https://tenor.com/view/tsunomaki-watame-vsauce-hololive-gif-21359421",
-        "https://tenor.com/view/tf2heavy-eating-chips-tf2-tf2heavy-tf2anonymousgamer-gif-23650452"
+        "GIFS_HERE"
     ]
 }
