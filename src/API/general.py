@@ -39,7 +39,7 @@ def getJSON_filter(url):
         Dictionary of JSON components
     
     """
-    url_filter = qt.quote_plus(url, safe=":/?=!+")
+    url_filter = qt.quote_plus(url, safe=":/?=!+&")
     response = rq.urlopen(url_filter)
     data = json.load(response)
     return data

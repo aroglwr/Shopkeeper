@@ -1384,3 +1384,5 @@ src/TODO.txt
 src/config.json
 src/files/TODO.txt
 src/API/__pycache__/steam.cpython-310.pyc
+src/files/FAQ.txt
+src/API/hypixel.py

@@ -2,6 +2,7 @@ import random
 from API.general import getJSON_filter as getJSON
 from API.general import getJSON_local as getJSON_local
 from API.general import timeElapsed
+from re import sub
 
 def getLatestPatch():
     """ Gets latest league patch e.g. 13.16.1
@@ -128,7 +129,31 @@ def getChampionName_weekly(championId, champList):
         return champName
     except:
         pass
+def removeClientFormatting(text):
 
+    return sub('<.*?>', '', text)
+
+
+def getRuneInfo(runes, runeList):
+    """
+    """
+    runesOut = []
+    print("doing runes")
+    try:
+        for rune in runes:
+            for i in range(len(runeList)):
+                for x in range(len(runeList[i]["slots"])):
+                    for n in range(len(runeList[i]["slots"][x]["runes"])):
+                        if runeList[i]["slots"][x]["runes"][n]["id"] == rune:
+                            print("rune found")
+                            runeFound = True
+                            runeName = runeList[i]["slots"][x]["runes"][n]["name"]
+                            runeDesc = removeClientFormatting(runeList[i]["slots"][x]["runes"][n]["shortDesc"])
+                            runesOut.append((runeName, runeDesc))
+        return runeFound, runesOut
+    except:
+
+        return False
 
 
 def getChampionID(championName):
@@ -176,12 +201,6 @@ def getChampionData(championName):
         return champion_name, champion_title, champion_lore, champion_icon, champion_splash, champion_tags, champion_stats, champion_resource, tip
     except:
         return "Invalid Champion Name", "", None, None, None, None, None, None, None
-
-def masteryData(account_id, riot_token):
-    
-    mastery = getJSON(f"https://euw1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{account_id}?api_key={riot_token}")
-    highestMastery = mastery[0]
-    return mastery, highestMastery
 
 def highestMasteryData(account_id, riot_token, region):
 
@@ -243,36 +262,45 @@ def getWeeklyRotation(riot_token):
 
     return names
 
-def getLiveGame(riot_token, account_id, region, summonerEmojiList):
+def getSummonerEmotes(summonerEmojiList, summoners):
+    return summonerEmojiList[str(summoners[0])] , summonerEmojiList[str(summoners[1])]
+
+def getRuneEmotes(runeList, runes):
+    runeEmoji = []
+    for i in range(len(runes)):
+            runeEmoji.append(runeList[str(runes[i])])
+    return runeEmoji
+
+
+def getLiveGame(riot_token, account_id, region, summonerEmojiList, runeList):
 
     region_f = checkRegion(region)
     try:
         isInGame = True
         
         liveData = getJSON(f'https://{region_f}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{account_id}?api_key={riot_token}')
-        print("json loaded")
         gameQueueId = liveData["gameQueueConfigId"]
-        print("gametype identified")
+        print("player is in game")
 
 
         mapInfo = queueData(gameQueueId)
         playerList = []
-        print("doing recursion")
         for i in range(10):
             playerList.append(liveData["participants"][i]["summonerName"])
             if liveData["participants"][i]["summonerId"] == account_id:
                 champion = liveData["participants"][i]["championId"]
+                runes = liveData["participants"][i]["perks"]["perkIds"][:-3]
                 summoners = (liveData["participants"][i]["spell1Id"]),(liveData["participants"][i]["spell2Id"])
                 champion_icon = f'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/{champion}.png'
                 champion = getChampionName(champion)
-        print("recursion done")
-        summonerEmoji = summonerEmojiList[str(summoners[0])] , summonerEmojiList[str(summoners[1])]
 
-        print("try time")
+        summonerEmoji = getSummonerEmotes(summonerEmojiList, summoners)
+        runeEmoji = getRuneEmotes(runeList, runes)
+        runeInfo = getRuneInfo(runes, getJSON(f"http://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/data/en_US/runesReforged.json"))
+        print(runeInfo)
         gameStartTime = int(str(liveData["gameStartTime"])[:-3])
         print(gameStartTime)
         gameDuration = timeElapsed(gameStartTime)
-        print("time done")
 
 
         bansBlue = []
@@ -298,10 +326,55 @@ def getLiveGame(riot_token, account_id, region, summonerEmojiList):
         bans = None
         summonerEmoji = None
         gameDuration = None
+        runeInfo = None
+        runeEmoji = None
 
     
 
-    return isInGame, playerList, mapInfo, champion, bans, champion_icon, summonerEmoji, gameDuration
+    return isInGame, playerList, mapInfo, champion, bans, champion_icon, summonerEmoji, gameDuration, runeEmoji
+
+
+def getMatchHistory(riot_token, puuid, region):
+    region = checkRegion(region)
+    print(region)
+    print(puuid)
+    if region == "euw1" or region == "eun1":
+        region_f = "europe"
+    elif region == "na1" or region == "la1" or region == "la2":
+        region_f = "americas"
+    elif region == "kr" or region == "jp1":
+        region_f = "asia"
+    else:
+        region_f = "sea"
+
+    #"AMERICAS, EUROPE, ASIA, SEA"
+    try:
+        matchHistorySuccess = True
+        matchIds = getJSON(f"https://{region_f}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=5&api_key={riot_token}")
+        matches = []
+        for i in range(len(matchIds)):
+            matches.append(getJSON(f"https://{region_f}.api.riotgames.com/lol/match/v5/matches/{matchIds[i]}?api_key={riot_token}"))
+        puuid = puuid
+        champName = []
+        win = []
+        role = []
+        gameType = []
+        for match in matches:
+            gameType.append(queueData(match["info"]["queueId"])[1])
+            for i in range(len(match["info"]["participants"])):
+                    if match["info"]["participants"][i]["puuid"] == puuid:
+                        champName.append(match["info"]["participants"][i]["championName"])
+                        if match["info"]["participants"][i]["win"] == True:
+                            win.append("Win")
+                        else:
+                            win.append("Loss")
+                        role.append(match["info"]["participants"][i]["individualPosition"].capitalize())
+        return matchHistorySuccess, [champName, win, role, gameType]
+
+    except:
+        matchHistorySuccess = False
+        return matchHistorySuccess, ""
+
 
 def queueData(id):
 

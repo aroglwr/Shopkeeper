@@ -5,6 +5,7 @@ import API.general as general
 import API.steam as steam
 import API.league as league
 import API.kag as kag
+#import API.hypixel as hp
 import random
 
 
@@ -20,6 +21,49 @@ cfg = general.getJSON_local("src/config.json")
 steam_token = cfg["steam_token"]
 riot_token = cfg["riot_token"]
 summonerEmoji = cfg["riot"]["leagueSummonerSpells"]
+runeEmoji = cfg["riot"]["leagueRunes"]
+
+
+"""
+
+class hypixel(discord.ui.Select):
+    def __init__(self):
+        options=[
+            discord.SelectOption(label="Bedwars",description="This is option 1!"),
+            discord.SelectOption(label="Wool Wars",description="This is option 2!"),
+            discord.SelectOption(label="TNT Games",description="This is option 3!")
+            ]
+        super().__init__(placeholder="Select an option",max_values=1,min_values=1,options=options)
+    async def callback(self, interaction: discord.Interaction):
+        
+        if self.values[0] == "Bedwars":
+
+            embed=discord.Embed(title=f'bedwars', url=f'', description=f'{hp.dummy(self.values[0])}', color=0x0000ff)
+        
+            disp_name = str(client.user)[:-5] + " bot"
+            embed.set_footer(text=f'{disp_name}')
+            await interaction.response.edit_message(embed=embed)
+        elif self.values[0] == "Wool Wars":
+            embed=discord.Embed(title=f'wool wars', url=f'', description=f'{hp.dummy(self.values[0])}', color=0x0000ff)
+
+            disp_name = str(client.user)[:-5] + " bot"
+            embed.set_footer(text=f'{disp_name}')
+            await interaction.response.edit_message(embed=embed)
+        elif self.values[0] == "TNT Games":
+            embed=discord.Embed(title=f'tnt games', url=f'', description=f'{hp.dummy(self.values[0])}', color=0x0000ff)
+
+            disp_name = str(client.user)[:-5] + " bot"
+            embed.set_footer(text=f'{disp_name}')
+            await interaction.response.edit_message(embed=embed)
+
+class hypixelView(discord.ui.View):
+    def __init__(self, *, timeout = 180):
+        super().__init__(timeout=timeout)
+        self.add_item(hypixel())
+
+
+"""
+
 
 
 @client.event
@@ -171,10 +215,36 @@ async def highestmastery(interaction: discord.Interaction, summoner_name: str, r
     embed.set_footer(text=f'{disp_name}')
     await interaction.followup.send(embed=embed)
 
-@tree.command(name = "championmastery", description = "Displays user's League of Legends champion mastery data")
-async def championmastery(interaction: discord.Interaction, summoner_name: str, region: str):
+@tree.command(name = "match_history", description = "Displays user's League of Legends match history")
+async def matchhistory(interaction: discord.Interaction, summoner_name: str, region: str):
+    """matchhistory description
+
+    Args:
+        summoner_name (str): Name of summoner
+        region(str): Where that summoner is registered in e.g. euw, na, kr
+    """
     await interaction.response.defer()
-    embed=discord.Embed(title=f'placeholder', url=f'', description=f'placeholder <:missing:720863696976347218>', color=0x0000ff)
+    summonerData =  league.getSummonerData(summoner_name, region, riot_token)
+    matchData = league.getMatchHistory(riot_token, summonerData[1], region)
+    if matchData[0] == True:
+        champName, win, role, gameType = matchData[1]
+        embed=discord.Embed(title=f'View on OP.GG', url=f'https://www.op.gg/summoners/{region}/{summonerData[6]}', description=f'', color=0x0000ff)
+        embed.set_author(name=f'{summonerData[0]} ({region.upper()})', icon_url="https://static.wikia.nocookie.net/leagueoflegends/images/c/c0/LoL_ping_missing.png")
+        embed.set_thumbnail(url=league.getSummonerIcon(summonerData[3]))
+
+        for i in range(len(win)):
+            if role[i] != "Invalid":
+                embed.add_field(name="W/L", value=f'{win[i]}')
+                embed.add_field(name="Gamemode", value=f'{gameType[i]}')
+                embed.add_field(name="Champion", value=f'{champName[i]} {role[i]}')
+            else:
+                embed.add_field(name="W/L", value=f'{win[i]}')
+                embed.add_field(name="Gamemode", value=f'{gameType[i]}')
+                embed.add_field(name="Champion", value=f'{champName[i]}')
+    else:
+        embed=discord.Embed(title="Could not load match history", description='', color=0x0000ff)
+        embed.set_thumbnail(url="https://static.wikia.nocookie.net/leagueoflegends/images/c/c0/LoL_ping_missing.png")
+        
 
     disp_name = str(client.user)[:-5] + " bot"
     embed.set_footer(text=f'{disp_name}')
@@ -200,7 +270,7 @@ async def weeklyrotation(interaction: discord.Interaction):
     await interaction.response.defer()
 
     
-    embed=discord.Embed(description=f'{league.getWeeklyRotation(riot_token)}', color=0x0000ff)
+    embed=discord.Embed(title="This weeks champion rotation", description=f'{general.unpackList(league.getWeeklyRotation(riot_token))}', color=0x0000ff)
 
     disp_name = str(client.user)[:-5] + " bot"
     embed.set_footer(text=f'{disp_name}')
@@ -208,16 +278,23 @@ async def weeklyrotation(interaction: discord.Interaction):
 
 @tree.command(name = "leaguelivegame", description = "Gets live game data for a League of Legends player")
 async def leaguelivegame(interaction: discord.Interaction, summoner_name: str, region: str):
+    """leaguelivegame description
+
+    Args:
+        summoner_name (str): Name of summoner
+        region(str): Where that summoner is registered in e.g. euw, na, kr
+    """
     await interaction.response.defer()
     summoner_data = league.getSummonerData(summoner_name, region, riot_token)
-    liveGameData = league.getLiveGame(riot_token, summoner_data[5], region, summonerEmoji)
+    liveGameData = league.getLiveGame(riot_token, summoner_data[5], region, summonerEmoji, runeEmoji)
 
     if liveGameData[0] == True:
         embed=discord.Embed(title=f'View on OP.GG (Spectate)', url=f'https://www.op.gg/summoners/{region}/{summoner_data[6]}/ingame', description=f'{summoner_data[0]} is playing {liveGameData[3]} in {liveGameData[2][1]} on {liveGameData[2][0]}\nSummoner has been in game for {liveGameData[7][0]} minutes {liveGameData[7][1]} seconds', color=0x0000ff)
-        
-        embed.add_field(name="Summoner Spells", value=f'{liveGameData[6][0]} {liveGameData[6][1]}', inline=True)
-        embed.add_field(name="primary rune", value='data', inline=True)
-        embed.add_field(name="secondary rune", value='data', inline=True)
+        #primaryTree = liveGameData[8][1][:4]
+        #secondaryTree = general.unpackList(liveGameData[8][1][4:6])
+        runeEmojis = liveGameData[8]
+        embed.add_field(name="Spells", value=f'{liveGameData[6][0]} {liveGameData[6][1]}', inline=True)
+        embed.add_field(name="Runes", value=f'{runeEmojis[0]} {runeEmojis[1]} {runeEmojis[2]}{runeEmojis[3]}\n{runeEmojis[4]} {runeEmojis[5]}', inline=True)
         embed.add_field(name="Banned Champions", value=f'{general.unpackList(liveGameData[4][0]) + general.unpackList(liveGameData[4][1])}', inline=True)
         embed.add_field(name="", value=f'', inline=True)
         embed.add_field(name="", value=f'', inline=True)
@@ -239,6 +316,11 @@ async def leaguelivegame(interaction: discord.Interaction, summoner_name: str, r
 # KAG Commands
 @tree.command(name = "kagstats", description="Gets King Arthur's Gold Stats for a player")
 async def kagstats(interaction: discord.Interaction, name: str):
+    """kagstats description
+
+    Args:
+        name (str): Name of user to search for
+    """
     await interaction.response.defer()
 
     apiData = kag.getWebStatus()
@@ -247,12 +329,28 @@ async def kagstats(interaction: discord.Interaction, name: str):
     if playerData is not None and playerData[0] == True:
         #killData = kag.getPlayerStats(playerData[6])
         suicides, teamKills, archerStats, builderStats, knightStats, totalStats = playerData[6]
-        embed=discord.Embed(title="KAGstats.com", url=playerData[7], description=f"Showing stats for {playerData[3]} {playerData[2]} ({playerData[1]})", color=0xFFD700)
+        if archerStats[0] != 0:
+            archerKda = round(archerStats[0]/archerStats[1], 2)
+        else:
+            archerKda = "0.00"
+        if builderStats[0] != 0:
+            builderKda = round(builderStats[0]/builderStats[1], 2)
+        else:
+            builderKda = "0.00"
+        if knightStats[0] != 0:
+            knightKda = round(knightStats[0]/knightStats[1], 2)
+        else:
+            knightKda = "0.00"
+        if totalStats[0] != 0:
+            totalKda = round(totalStats[0]/totalStats[1], 2)
+        else:
+            totalKda = "0.00"
+        embed=discord.Embed(title="View on KAGstats.com", url=playerData[7], description=f"Showing stats for {playerData[3]} {playerData[2]} ({playerData[1]})", color=0xFFD700)
         embed.set_thumbnail(url=playerData[5])
-        embed.add_field(name=f"Archer ({round(archerStats[0]/archerStats[1], 2)})", value=f'{archerStats[0]} kills {archerStats[1]} deaths', inline=True)
-        embed.add_field(name=f"Builder ({round(builderStats[0]/builderStats[1], 2)})", value=f'{builderStats[0]} kills {builderStats[1]} deaths', inline=True)
-        embed.add_field(name=f"Knight ({round(knightStats[0]/knightStats[1], 2)})", value=f'{knightStats[0]} kills {knightStats[1]} deaths', inline=True)
-        embed.add_field(name=f"Total ({round(totalStats[0]/totalStats[1], 2)})", value=f'{totalStats[0]} kills {totalStats[1]} deaths', inline=True)
+        embed.add_field(name=f"Archer ({archerKda})", value=f'{archerStats[0]:,} kills {archerStats[1]:,} deaths', inline=True)
+        embed.add_field(name=f"Builder ({builderKda})", value=f'{builderStats[0]:,} kills {builderStats[1]:,} deaths', inline=True)
+        embed.add_field(name=f"Knight ({knightKda})", value=f'{knightStats[0]:,} kills {knightStats[1]:,} deaths', inline=True)
+        embed.add_field(name=f"Total ({totalKda})", value=f'{totalStats[0]:,} kills {totalStats[1]:,} deaths', inline=True)
         embed.set_author(name="kagstats api", icon_url="https://kagstats.com/favicon.ico")
 
 
@@ -260,7 +358,7 @@ async def kagstats(interaction: discord.Interaction, name: str):
         embed=discord.Embed(title="kagstats", url="https://kagstats.com", description=f"could not find user {name}", color=0xFFD700)
 
     disp_name = str(client.user)[:-5] + " bot"
-    embed.set_footer(text=f'Tracking {apiData[1]} kills by {apiData[0]} across {apiData[2]} servers\n{disp_name} using KAGstats {apiData[3]}')
+    embed.set_footer(text=f'Tracking {apiData[1]:,} kills by {apiData[0]:,} players across {apiData[2]} servers\n{disp_name} using KAGstats {apiData[3]}')
     await interaction.followup.send(embed=embed)
 
 
