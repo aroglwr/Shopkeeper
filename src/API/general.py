@@ -2,6 +2,7 @@ import json
 import urllib.request as rq
 import urllib.parse as qt
 import os
+import platform
 from pathlib import Path
 import datetime
 from math import floor
@@ -63,10 +64,17 @@ def getJSON_local(path):
     output = getJSON(p.as_uri())
     return output
 
-def unpackList(list):
+def unpackList(list, comma):
     string = ""
-    for i in list:
-        string += f'{i} '
+    if comma == True:
+        for word in list:
+                if word != list[len(list)-1]:
+                    string += word + ", "
+                else:
+                    string += word
+    else:
+        for word in list:
+            string += f'{word} '
 
     return string
 
@@ -111,3 +119,18 @@ def timeElapsed(timestamp):
 
     return minutes, seconds
 
+def getVersion():
+    return platform.python_version()
+
+def progressBar(length, percentage):
+
+    
+    show = int(round((percentage)*length, 0))
+    string = ""
+    for x in range(length):
+        string += "#"
+    bar = string[:show]
+    for i in range(length-show):
+        bar += ("-")
+    
+    return bar

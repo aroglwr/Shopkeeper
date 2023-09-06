@@ -2,7 +2,11 @@ import random
 from API.general import getJSON_filter as getJSON
 from API.general import getJSON_local as getJSON_local
 from API.general import timeElapsed
+from API.general import unpackList
 from re import sub
+from matplotlib import pyplot as plt
+from PIL import Image
+import urllib.request as rq
 
 def getLatestPatch():
     """ Gets latest league patch e.g. 13.16.1
@@ -51,12 +55,43 @@ def getSummonerData(summoner_name, region, riot_token):
     data = getJSON(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}?api_key={riot_token}")
     print("json success")
     summoner_puuid = data["puuid"]
+
     summoner_name_case = data["name"]
     name_url = summoner_name_case.replace(" ", "%20")
     summoner_icon = data["profileIconId"]
     summoner_level = data["summonerLevel"]
     account_id = data["id"]
+    print(account_id)
     return summoner_name_case, summoner_puuid, summoner_puuid, summoner_icon, summoner_level, account_id, name_url
+
+def getRankedData(riot_token, summoner_id, region):
+    region_f = checkRegion(region)
+    print("doing ranked json")
+    rankedInfo = getJSON(f"https://{region_f}.api.riotgames.com/lol/league/v4/entries/by-summoner/{summoner_id}?api_key={riot_token}")
+    if rankedInfo != []:
+        for i in range(len(rankedInfo)):
+            if rankedInfo[i]["queueType"] == "RANKED_FLEX_SR" or rankedInfo[i]["queueType"] == "RANKED_SOLO_5x5":
+        
+                print("has ranked info")
+                queueType = rankedInfo[0]["queueType"]
+                tier = rankedInfo[0]["tier"]
+                rank = rankedInfo[0]["rank"]
+                rankIcon = f"https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/{tier.lower()}.png"
+                wins = rankedInfo[0]["wins"]
+                losses = rankedInfo[0]["losses"]
+                leaguePoints = rankedInfo[0]["leaguePoints"]
+                hasRank = True
+                return hasRank, rankIcon, queueType, tier, rank,  wins, losses, leaguePoints
+            else:
+                print("no ranked info")
+                hasRank = False
+                rankIcon = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked_crest_placeholder_2.png"
+                return hasRank, rankIcon
+    else:
+        print("no ranked info")
+        hasRank = False
+        rankIcon = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked_crest_placeholder_2.png"
+        return hasRank, rankIcon
 
 def getSummonerIcon(icon_id):
     """ Returns summoner icon from ddragon CDN
@@ -71,9 +106,13 @@ def getSummonerIcon(icon_id):
     """
     src = f'https://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/img/profileicon/{icon_id}.png'
     return src
+
 def nameFilter(champName):
-    exempt = ["LeeSin","KogMaw","MasterYi","MissFortune","MonkeyKing","RekSai","TahmKench"]
-    exempt_lower = ["leesin","kogmaw","masteryi","missfortune","monkeyking","reksai","tahmkench"]
+    champName = champName.replace(" ", "").replace("'", "")
+    if champName.lower() == "wukong":
+        champName = "monkeyking"
+    exempt = ["LeeSin","KogMaw","MasterYi","MissFortune","MonkeyKing","RekSai","TahmKench","TwistedFate"]
+    exempt_lower = ["leesin","kogmaw","masteryi","missfortune","monkeyking","reksai","tahmkench","twistedfate"]
 
     if champName.lower() not in exempt_lower:
         champName_out = champName.capitalize()
@@ -129,10 +168,10 @@ def getChampionName_weekly(championId, champList):
         return champName
     except:
         pass
+
 def removeClientFormatting(text):
 
     return sub('<.*?>', '', text)
-
 
 def getRuneInfo(runes, runeList):
     """
@@ -155,13 +194,22 @@ def getRuneInfo(runes, runeList):
 
         return False
 
+def getItemName(itemId, itemList):
+
+    itemName = itemList[f"{itemId}"]["name"]
+    print(itemName)
+    return itemName
 
 def getChampionID(championName):
     champName = nameFilter(championName)
     champList = getJSON(f"http://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/data/en_US/champion.json")["data"]
+    try:
+        champId = champList[champName]["key"]
+        return champId
+    except:
+        return NameError
 
-    champId = champList[champName]["key"]
-    return champId
+
 
 def getChampionData(championName):
     """
@@ -183,24 +231,79 @@ def getChampionData(championName):
         #print(champion_title)
         champion_lore = champData["lore"]
         #print(champion_lore)
-        champion_icon = f'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/{champData["key"]}.png'
+        champion_icon = f'http://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/img/champion/{champName_f}.png'
         ""
         #print(champion_icon)
         champion_splash = f'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-splashes/{champData["key"]}/{champData["key"]}000.jpg'
         #print(champion_splash)
         champion_tags = ""
-        for tag in champData["tags"]:
-            champion_tags += tag + ", "
+        """for tag in champData["tags"]:
+            if tag != champData["tags"][len(champData["tags"])-1]:
+                champion_tags += tag + ", "
+            else:
+                champion_tags += tag"""
+        champion_tags = unpackList(champData["tags"], True)
         champion_stats = champData["stats"]
         champion_resource = champData["partype"]
+        champion_skins = []
+        for skin in champData["skins"]:
+            champion_skins.append(skin["name"])
+        print(champion_skins)
+
         try:
             champ_tips = champData["allytips"] + champData["enemytips"]
             tip = champ_tips[random.randint(0, (len(champ_tips)-1))]
         except:
-            tip = "None given"
-        return champion_name, champion_title, champion_lore, champion_icon, champion_splash, champion_tags, champion_stats, champion_resource, tip
+            tip = None
+        return champion_name, champion_title, champion_lore, champion_icon, champion_splash, champion_tags, champion_stats, champion_resource, tip, champion_skins, champName_f
     except:
-        return "Invalid Champion Name", "", None, None, None, None, None, None, None
+        return "Invalid Champion Name", "", None, None, None, None, None, None, None, None, None
+
+def getItemData(itemName):
+    """
+     
+    Parameters
+    ----------
+
+    Returns
+    -------
+    """
+    itemName = itemName.replace(" ", "")
+    itemList = getJSON(f"http://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/data/en_US/item.json")["data"]
+    # http://ddragon.leagueoflegends.com/cdn/13.16.1/img/item/1018.png
+    itemId = ""
+    build_path = []
+    builds_into = []
+    for item in itemList:
+        if itemList[item]["name"].lower().replace(" ", "") == itemName.lower():
+            print(itemList[item]["name"])
+            itemId = itemList[item]["image"]["full"]
+            print(itemId)
+            itemCost = itemList[item]["gold"]["total"]
+            itemCombine = itemList[item]["gold"]["base"]
+            itemSell = itemList[item]["gold"]["sell"]
+            itemDesc = itemList[item]["plaintext"]
+            itemName_f = itemList[item]["name"]
+            try:
+                for component in itemList[item]["from"]:
+                    print(component)
+                    build_path.append(getItemName(component, itemList))
+                
+            except:
+                pass
+            try:
+                for component in itemList[item]["into"]:
+                    print(component)
+                    builds_into.append(getItemName(component, itemList))
+                
+            except:
+                pass
+
+    itemIcon = f'http://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/img/item/{itemId}'
+    print(itemIcon)
+    
+    return itemIcon, itemCost, itemDesc, itemName_f, build_path, builds_into, itemCombine, itemSell
+
 
 def highestMasteryData(account_id, riot_token, region):
 
@@ -334,7 +437,7 @@ def getLiveGame(riot_token, account_id, region, summonerEmojiList, runeList):
     return isInGame, playerList, mapInfo, champion, bans, champion_icon, summonerEmoji, gameDuration, runeEmoji
 
 
-def getMatchHistory(riot_token, puuid, region):
+def getMatchHistory(riot_token, puuid, region, count):
     region = checkRegion(region)
     print(region)
     print(puuid)
@@ -350,7 +453,7 @@ def getMatchHistory(riot_token, puuid, region):
     #"AMERICAS, EUROPE, ASIA, SEA"
     try:
         matchHistorySuccess = True
-        matchIds = getJSON(f"https://{region_f}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=5&api_key={riot_token}")
+        matchIds = getJSON(f"https://{region_f}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count={count}&api_key={riot_token}")
         matches = []
         for i in range(len(matchIds)):
             matches.append(getJSON(f"https://{region_f}.api.riotgames.com/lol/match/v5/matches/{matchIds[i]}?api_key={riot_token}"))
@@ -365,11 +468,11 @@ def getMatchHistory(riot_token, puuid, region):
                     if match["info"]["participants"][i]["puuid"] == puuid:
                         champName.append(match["info"]["participants"][i]["championName"])
                         if match["info"]["participants"][i]["win"] == True:
-                            win.append("Win")
+                            win.append(":white_check_mark: Win")
                         else:
-                            win.append("Loss")
+                            win.append(":x: Loss")
                         role.append(match["info"]["participants"][i]["individualPosition"].capitalize())
-        return matchHistorySuccess, [champName, win, role, gameType]
+        return matchHistorySuccess, [champName, win, role, gameType], [matchIds, region_f]
 
     except:
         matchHistorySuccess = False
@@ -392,12 +495,65 @@ def queueData(id):
         
     return mapName, desc, notes
 
+def drawMap(riot_token, gameId, region, mapType):
+    gameLink = f"https://{region}.api.riotgames.com/lol/match/v5/matches/{gameId}/timeline?api_key={riot_token}"
+
+    
+
+    print(gameLink)
+    game = getJSON(gameLink)["info"]["frames"]
+    blueId = [1, 2, 3, 4, 5]
+    redId = [6, 7, 8, 9, 10]
+    x_blue = []
+    x_red = []
+    y_blue = []
+    y_red = []
+
+    for frame in game:
+        for event in frame["events"]:
+            if event["type"] == "CHAMPION_KILL":
+                if event["killerId"] in blueId:
+                    x_blue.append(event["position"]["x"])
+                    y_blue.append(event["position"]["y"])
+                else:
+                    x_red.append(event["position"]["x"])
+                    y_red.append(event["position"]["y"])
+
+    red_kills = len(x_red)
+    blue_kills = len(x_blue)
+    # bypass image restrictions
+    opener=rq.build_opener()
+    opener.addheaders=[('User-Agent','Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1941.0 Safari/537.36')]
+    rq.install_opener(opener)
+
+    if mapType == "5v5 ARAM":
+        url='https://raw.communitydragon.org/latest/game/assets/maps/info/map12/2dlevelminimap.png'
+        print(" is aram")
+    else:
+        url='https://raw.communitydragon.org/latest/game/assets/maps/info/map11/2dlevelminimap.png'
+    local='map'
+    rq.urlretrieve(url,local)
 
 
-
-def getRankedData(riot_token, account_id, region):
-
-    return ""
+    img = Image.open("map")
+    img.show()
 
 
-#print(dateConvert(1693530094594))
+    plt.rcParams["figure.figsize"] = [7.00, 3.50]
+    plt.rcParams["figure.autolayout"] = True
+    im = plt.imread("map")
+    fig, ax = plt.subplots()
+    if mapType == "5v5 ARAM":
+        im = ax.imshow(im, extent=[0, 12300, 0, 12300])
+    else:
+        im = ax.imshow(im, extent=[0, 16000, 0, 16000])
+
+    ax.plot(x_blue, y_blue,  marker=".", markersize=20, markeredgecolor="red", markerfacecolor="blue", linestyle="None")
+    ax.plot(x_red, y_red,  marker=".", markersize=20, markeredgecolor="blue", markerfacecolor="red", linestyle="None")
+    ax.set_axis_off()
+    plt.plot()
+    print("saving file")
+    plt.savefig(f"src\\files\\LeagueMaps\{gameId[:2]}\{gameId}.png", bbox_inches='tight', pad_inches=0)
+    #plt.show()
+
+    return red_kills, blue_kills

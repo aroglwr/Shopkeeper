@@ -18,7 +18,6 @@ tests/test.py
 tests/LOOT.json
 tests/funny.py
 tests/aroglwr.json
-src/files/funny999.txt
 src/files/dog.gif
 src/bot-env/Scripts/pythonw.exe
 src/bot-env/Scripts/python.exe
@@ -1380,9 +1379,12 @@ src/API/__pycache__/general.cpython-310.pyc
 src/API/__pycache__/kag.cpython-310.pyc
 src/API/__pycache__/league.cpython-310.pyc
 src/API/__pycache__/sale.cpython-310.pyc
-src/TODO.txt
 src/config.json
 src/files/TODO.txt
 src/API/__pycache__/steam.cpython-310.pyc
 src/files/FAQ.txt
 src/API/hypixel.py
+src/API/__pycache__/general.cpython-311.pyc
+src/API/__pycache__/kag.cpython-311.pyc
+src/API/__pycache__/league.cpython-311.pyc
+src/API/__pycache__/steam.cpython-311.pyc
