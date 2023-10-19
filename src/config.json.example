@@ -1,5 +1,6 @@
 {
     "token":"DISCORD_TOKEN_HERE",
+    "version":"v0.0.1",
     "steam_token":"STEAM_TOKEN_HERE",
     "riot_token": "RIOT_TOKEN_HERE",
     "riot":{
