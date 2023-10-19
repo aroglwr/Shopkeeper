@@ -49,15 +49,15 @@ def parseID(input):
     output : ID of game inputted
         True for int false for non-int
     """
+
     if inputType(input)[1] == True:
+        print(input)
         return input
 
-    elif inputType(input)[1] == False:
+    else:
         output = getID(input)
         return output
-    else:
-        print("error")
-        pass
+    
 
 
 def parseID_account(input, steam_token):
@@ -119,9 +119,8 @@ def getPrice(appid):
     url = f'https://store.steampowered.com/api/appdetails?filters=price_overview&appids={appid}'
     data = getJSON(url)
     
-    login = data[f'{appid}']["success"]
-    overview = data[f'{appid}']["data"]["price_overview"]
-    if login == True:
+    if data[f'{appid}']["success"]:
+        overview = data[f'{appid}']["data"]["price_overview"]
         price_initial = overview["initial"]
         price_final = overview["final"]
         price_formatted = overview["final_formatted"]
@@ -135,36 +134,25 @@ def getPrice(appid):
 def getName(appid):
 
     # Set up JSON read
-    url = f'https://api.steampowered.com/ISteamApps/GetAppList/v2/'
+    url = f'https://store.steampowered.com/api/appdetails?appids={appid}'
     data = getJSON(url)
-    appid = appid
-    apps = data["applist"]["apps"]
-    # Just check
-    #print("Searching for name...")
-    
-    for i in range(len(apps)):
-        if apps[i]["appid"] == int(appid):
-            name = apps[i]["name"]
-    return name
+    return data[0]["data"]["name"]
 
 
 def getID(input):
-
     # Set up JSON read
-    url = f'https://api.steampowered.com/ISteamApps/GetAppList/v2/'
+    url = f'http://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json'
     data = getJSON(url)
     apps = data["applist"]["apps"]
     # Just check
     #print("Searching for name...")
-    appid = []
     try:
-        for i in range(len(apps)):
-            if apps[i]["name"] == str(input):
-                appid = apps[i]["appid"]
+        for app in apps:
+            if str(app["name"]).lower() == str(input).lower():
+                appid = app["appid"]
         return appid
     except:
-        print("Error")
-
+        print("error getting id")
 
 
 def detailOutput(input):

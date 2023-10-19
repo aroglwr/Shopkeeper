@@ -1,4 +1,4 @@
-oopyeepy.code-workspace
+shopkeeper.code-workspace
 tests/Input Stuff/input_test.py
 tests/_old/SteamAPI/__pycache__/sale.cpython-310.pyc
 tests/_old/SteamAPI/__pycache__/bot.cpython-310.pyc
@@ -1388,3 +1388,11 @@ src/API/__pycache__/general.cpython-311.pyc
 src/API/__pycache__/kag.cpython-311.pyc
 src/API/__pycache__/league.cpython-311.pyc
 src/API/__pycache__/steam.cpython-311.pyc
+src/test_1.py
+src/API/mastery_generator.py
+tests/_old/puuids-used.json
+tests/_old/osu.py
+tests/_old/masterydata.json
+tests/_old/LOOT.json
+tests/_old/funny.py
+tests/_old/aroglwr.json

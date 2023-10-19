@@ -1,4 +1,4 @@
-# oopyeepy
+# Shopkeeper
 ## What is this?
 This is a Discord bot built on [Discord.py](https://discordpy.readthedocs.io/en/stable/)
 

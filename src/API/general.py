@@ -8,7 +8,7 @@ import datetime
 from math import floor
 from time import time
 
-def getJSON(url):
+def getJSON(url: str):
     """ Simple get JSON file from URL
 
     Parameters
@@ -26,7 +26,7 @@ def getJSON(url):
     data = json.load(response)
     return data
 
-def getJSON_filter(url):
+def getJSON_filter(url: str):
     """ Simple get JSON file from URL with filter
 
     Parameters
@@ -40,12 +40,12 @@ def getJSON_filter(url):
         Dictionary of JSON components
     
     """
-    url_filter = qt.quote_plus(url, safe=":/?=!+&")
+    url_filter = qt.quote_plus(url, safe=':/?=!+&"[{}],')
     response = rq.urlopen(url_filter)
     data = json.load(response)
     return data
 
-def getJSON_local(path):
+def getJSON_local(path: str):
     """ Simple get JSON file from relative local path
 
     Parameters
@@ -64,7 +64,7 @@ def getJSON_local(path):
     output = getJSON(p.as_uri())
     return output
 
-def unpackList(list, comma):
+def unpackList(list: list, comma: bool):
     string = ""
     if comma == True:
         for word in list:
@@ -79,7 +79,7 @@ def unpackList(list, comma):
     return string
 
 
-def dateConvert(epochDate):
+def dateConvert(epochDate: int):
     """ Converts timestamp from epoch to standard
 
     Parameters
@@ -103,13 +103,13 @@ def dateConvert(epochDate):
     """
     date_time = datetime.datetime.fromtimestamp(epochDate)
     date_time_alt = date_time.strftime("%Y-%m-%d")
-    formatted_date = date_time.strftime("%B %d, %Y, %I:%M %p %ZGMT,")
+    formatted_date = date_time.strftime("%B %d, %Y, %I:%M %p %ZUTC,")
     formatted_date_alt = date_time.strftime("%B %d, %Y")
     return date_time, formatted_date, formatted_date_alt, date_time_alt
 
 
 
-def timeElapsed(timestamp):
+def timeElapsed(timestamp: int):
 
     dt1 = dateConvert(timestamp)[0]
     dt2 = dateConvert(floor(time()))[0]
@@ -122,7 +122,7 @@ def timeElapsed(timestamp):
 def getVersion():
     return platform.python_version()
 
-def progressBar(length, percentage):
+def progressBar(length: int, percentage: float):
 
     
     show = int(round((percentage)*length, 0))
