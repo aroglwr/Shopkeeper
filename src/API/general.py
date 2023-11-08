@@ -7,9 +7,56 @@ from pathlib import Path
 import datetime
 from math import floor
 from time import time
+import aiohttp
+import aiofiles
+from asyncio import run
 
-def getJSON(url: str):
+
+async def getJSON(url: str):
     """ Simple get JSON file from URL
+
+    Parameters
+    ----------
+    url : str
+        URL of json file
+    
+    Returns
+    -------
+    data : dict
+        Dictionary of JSON components
+    
+    """
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            if resp.status == 200:
+
+                data= await resp.json()
+            else:
+                data = None
+    return data
+
+async def getJSON_local(path: str):
+    """ Simple get JSON file from relative local path
+
+    Parameters
+    ----------
+    url : str
+        URL of json file
+    
+    Returns
+    -------
+    data : dict
+        Dictionary of JSON components
+    
+    """
+    async with aiofiles.open(path, mode='r', encoding="utf8") as f:
+        contents = await f.read()
+    content = json.loads(contents)
+    return content
+
+
+def getJSON_old(url: str):
+    """ Synchronous version of getJSON
 
     Parameters
     ----------
@@ -27,7 +74,7 @@ def getJSON(url: str):
     return data
 
 def getJSON_filter(url: str):
-    """ Simple get JSON file from URL with filter
+    """ NOT USEFUL ANYMORE Simple get JSON file from URL with filter
 
     Parameters
     ----------
@@ -45,8 +92,8 @@ def getJSON_filter(url: str):
     data = json.load(response)
     return data
 
-def getJSON_local(path: str):
-    """ Simple get JSON file from relative local path
+def getJSON_local_old(path: str):
+    """ Synchronous version of getJSON_local
 
     Parameters
     ----------
@@ -119,7 +166,7 @@ def timeElapsed(timestamp: int):
 
     return minutes, seconds
 
-def getVersion():
+async def getVersion():
     return platform.python_version()
 
 def progressBar(length: int, percentage: float):

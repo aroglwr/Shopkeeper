@@ -2,6 +2,7 @@
     "token":"DISCORD_TOKEN_HERE",
     "steam_token":"STEAM_TOKEN_HERE",
     "riot_token": "RIOT_TOKEN_HERE",
+    "nasa_token":"NASA_TOKEN_HERE",
     "riot":{
         "leagueSummonerSpells":{
             "1":"<:cleanse:1146196429312905287>",

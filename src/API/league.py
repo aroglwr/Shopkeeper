@@ -1,15 +1,16 @@
 import random
 import numpy as np
-from API.general import getJSON_filter as getJSON
-from API.general import getJSON_local as getJSON_local
-from API.general import timeElapsed
-from API.general import unpackList
+#from API.general import getJSON_filter as getJSON
+#from API.general import getJSON_local as getJSON_local
+#from API.general import timeElapsed
+#from API.general import unpackList
+from API.general import *
 from re import sub
 from matplotlib import pyplot as plt
 from PIL import Image
 import urllib.request as rq
 
-def getLatestPatch():
+async def getLatestPatch():
     """ Gets latest league patch e.g. 13.16.1
     
     Parameters
@@ -22,11 +23,12 @@ def getLatestPatch():
         Latest patch version
 
     """
-    patchList = getJSON("https://ddragon.leagueoflegends.com/api/versions.json")
+    patchList = await getJSON("https://ddragon.leagueoflegends.com/api/versions.json")
+    
     ver = patchList[0]
     return ver
 
-def checkRegion(region: str):
+async def checkRegion(region: str):
     """ Returns the correctly formatted region for Riot's web API
 
     Parameters
@@ -48,7 +50,7 @@ def checkRegion(region: str):
 
     return region_f
 
-def getSummonerData(summoner_name: str, region: str, riot_token: str):
+async def getSummonerData(summoner_name: str, region: str, riot_token: str):
     """ Returns various summoner data
 
     Parameters
@@ -78,8 +80,8 @@ def getSummonerData(summoner_name: str, region: str, riot_token: str):
         Formatted version of summoner name for use in URLs
     """
 
-    region_f = checkRegion(region)
-    data = getJSON(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}?api_key={riot_token}")
+    region_f = await checkRegion(region)
+    data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}?api_key={riot_token}")
     summoner_puuid = data["puuid"]
     summoner_name_case = data["name"]
     name_url = summoner_name_case.replace(" ", "%20")
@@ -88,7 +90,7 @@ def getSummonerData(summoner_name: str, region: str, riot_token: str):
     account_id = data["id"]
     return summoner_name_case, summoner_puuid, summoner_puuid, summoner_icon, summoner_level, account_id, name_url
 
-def getRankedData(riot_token: str, summoner_id: str, region: str):
+async def getRankedData(riot_token: str, summoner_id: str, region: str):
     """ Gets most ranked data for summoner. Attempts to find solo/duo -> flex if no solo/duo data
 
     Parameters
@@ -119,9 +121,9 @@ def getRankedData(riot_token: str, summoner_id: str, region: str):
     leaguePoints : int
         Only if hasRank is True. Amount of LP
     """
-    region_f = checkRegion(region)
+    region_f = await checkRegion(region)
     print("doing ranked json")
-    rankedInfo = getJSON(f"https://{region_f}.api.riotgames.com/lol/league/v4/entries/by-summoner/{summoner_id}?api_key={riot_token}")
+    rankedInfo = await getJSON(f"https://{region_f}.api.riotgames.com/lol/league/v4/entries/by-summoner/{summoner_id}?api_key={riot_token}")
     print(f"https://{region_f}.api.riotgames.com/lol/league/v4/entries/by-summoner/{summoner_id}?api_key={riot_token}")
     if rankedInfo != []:
         for info in rankedInfo:
@@ -148,7 +150,7 @@ def getRankedData(riot_token: str, summoner_id: str, region: str):
         rankIcon = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked_crest_placeholder_2.png"
         return hasRank, rankIcon
 
-def getSummonerIcon(icon_id: int):
+async def getSummonerIcon(icon_id: int):
     """ Returns summoner icon from ddragon CDN
 
     Parameters
@@ -161,15 +163,15 @@ def getSummonerIcon(icon_id: int):
     src : str
         URL to raw image
     """
-    src = f'https://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/img/profileicon/{icon_id}.png'
+    src = f'https://ddragon.leagueoflegends.com/cdn/{await getLatestPatch()}/img/profileicon/{icon_id}.png'
     return src
 
-def nameFilter(champName):
+async def nameFilter(champName):
     champName = champName.replace(" ", "").replace("'", "")
     if champName.lower() == "wukong":
         champName = "monkeyking"
-    exempt = ["LeeSin","KogMaw","MasterYi","MissFortune","MonkeyKing","RekSai","TahmKench","TwistedFate"]
-    exempt_lower = ["leesin","kogmaw","masteryi","missfortune","monkeyking","reksai","tahmkench","twistedfate"]
+    exempt = ["LeeSin","KogMaw","MasterYi","MissFortune","MonkeyKing","RekSai","TahmKench","TwistedFate", "KSante"]
+    exempt_lower = ["leesin","kogmaw","masteryi","missfortune","monkeyking","reksai","tahmkench","twistedfate", "ksante"]
 
     if champName.lower() not in exempt_lower:
         champName_out = champName.capitalize()
@@ -179,7 +181,7 @@ def nameFilter(champName):
                 champName_out = exempt[x]
     return champName_out
 
-def getChampionName(championId: int):
+async def getChampionName(championId: int):
     """ Returns name of champion given it's ID
     
     Parameters
@@ -193,16 +195,17 @@ def getChampionName(championId: int):
         Desired champions display name
     """
 
-    champList = getJSON(f"http://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/data/en_US/championFull.json")["keys"]
-    champName = "Couldn't retrieve champion name"    
+    champList = await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{await getLatestPatch()}/data/en_US/championFull.json")
+    champName = "Couldn't retrieve champion name"
     try:
-        champName = champList[f'{championId}']
+        champName_internal = champList["keys"][f'{championId}']
+        champName = champList["data"][champName_internal]["name"]
         return champName
     except:
-        return
+        return None
 
-def getChampionName_weekly(championId, champList):
-    """ Duplicate of getChampionName_weekly without making multiple calls for multiple entries
+async def getChampionName_weekly(championId, champList):
+    """ Duplicate of getChampionName without making multiple calls for multiple entries
     
     Parameters
     ----------
@@ -221,12 +224,13 @@ def getChampionName_weekly(championId, champList):
     #champList = getJSON(f"http://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/data/en_US/championFull.json")["keys"]
     champName = "Couldn't retrieve champion name"    
     try:
-        champName = champList[f'{championId}']
+        champName_internal = champList["keys"][f'{championId}']
+        champName = champList["data"][champName_internal]["name"]
         return champName
     except:
         pass
 
-def removeClientFormatting(text: str):
+async def removeClientFormatting(text: str):
     """ Removes the wacky formatting done to format text for the League Client
 
     Parameters
@@ -241,8 +245,22 @@ def removeClientFormatting(text: str):
     """
     return sub('<.*?>', '', text)
 
-def getRuneInfo(runes: list, runeList: list):
-    """
+async def getRuneInfo(runes: list, runeList: list):
+    """ Gets rune data from name search
+
+    Parameters
+    ----------
+    runes : list
+        List of runes to search for
+    runeList : list
+        Rune database list
+    
+    Returns
+    -------
+    runeFound : bool
+        True if rune is found, False if couldn't find
+    runesOut : list
+        List containing tuples of (rune name, rune description)
     """
     runesOut = []
     print("doing runes")
@@ -262,23 +280,21 @@ def getRuneInfo(runes: list, runeList: list):
 
         return False
 
-def getItemName(itemId, itemList):
+async def getItemName(itemId, itemList):
 
     itemName = itemList[f"{itemId}"]["name"]
     return itemName
 
-def getChampionID(championName):
-    champName = nameFilter(championName)
-    champList = getJSON(f"http://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/data/en_US/champion.json")["data"]
+async def getChampionID(championName):
+    champName = await nameFilter(championName)
+    champList = await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{await getLatestPatch()}/data/en_US/champion.json")["data"]
     try:
         champId = champList[champName]["key"]
         return champId
     except:
         return NameError
 
-
-
-def getChampionData(championName: str):
+async def getChampionData(championName: str):
     """
      
     Parameters
@@ -287,9 +303,9 @@ def getChampionData(championName: str):
     Returns
     -------
     """
-    champName_f = nameFilter(championName)
-    latest_patch = getLatestPatch()
-    champList = getJSON(f"http://ddragon.leagueoflegends.com/cdn/{latest_patch}/data/en_US/championFull.json")["data"]
+    champName_f = await nameFilter(championName)
+    latest_patch = await getLatestPatch()
+    champList = (await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{latest_patch}/data/en_US/championFull.json"))["data"]
     try:
         champData = champList[str(champName_f)]
         #print(champData)
@@ -327,7 +343,7 @@ def getChampionData(championName: str):
     except:
         return "Invalid Champion Name", "", None, None, None, None, None, None, None, None, None
 
-def getItemData(itemName: str):
+async def getItemData(itemName: str):
     """
      
     Parameters
@@ -337,8 +353,8 @@ def getItemData(itemName: str):
     -------
     """
     itemName = itemName.replace(" ", "")
-    latest_patch = getLatestPatch()
-    itemList = getJSON(f"http://ddragon.leagueoflegends.com/cdn/{latest_patch}/data/en_US/item.json")["data"]
+    latest_patch = await getLatestPatch()
+    itemList = (await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{latest_patch}/data/en_US/item.json"))["data"]
     # http://ddragon.leagueoflegends.com/cdn/13.16.1/img/item/1018.png
     itemId = ""
     build_path = []
@@ -356,14 +372,14 @@ def getItemData(itemName: str):
             try:
                 for component in itemList[item]["from"]:
                     print(component)
-                    build_path.append(getItemName(component, itemList))
+                    build_path.append(await getItemName(component, itemList))
                 
             except:
                 pass
             try:
                 for component in itemList[item]["into"]:
                     print(component)
-                    builds_into.append(getItemName(component, itemList))
+                    builds_into.append(await getItemName(component, itemList))
                 
             except:
                 pass
@@ -374,11 +390,11 @@ def getItemData(itemName: str):
     return itemIcon, itemCost, itemDesc, itemName_f, build_path, builds_into, itemCombine, itemSell
 
 
-def highestMasteryData(account_id, riot_token, region):
+async def highestMasteryData(account_id, riot_token, region):
 
 
-    region_f = checkRegion(region)
-    data = getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{account_id}?api_key={riot_token}")[0]
+    region_f = await checkRegion(region)
+    data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{account_id}?api_key={riot_token}")[0]
     masteryPoints = data["championPoints"]
     if data["chestGranted"] == True:
         chestGranted = "Yes"
@@ -395,12 +411,12 @@ def highestMasteryData(account_id, riot_token, region):
     
     return masteryPoints, chestGranted, tokenStatus, championId, championLevel
 
-def masterySearch(account_id, champion_name, riot_token, region):
+async def masterySearch(account_id, champion_name, riot_token, region):
 
 
-    region_f = checkRegion(region)
-    champId = getChampionID(champion_name)
-    mastery_data = getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{account_id}/by-champion/{champId}?api_key={riot_token}")
+    region_f = await checkRegion(region)
+    champId = await getChampionID(champion_name)
+    mastery_data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{account_id}/by-champion/{champId}?api_key={riot_token}")
 
     
     masteryPoints = mastery_data["championPoints"]
@@ -426,41 +442,41 @@ def masteryFull(account_id, champion_name, riot_token, region):
     #mastery_data = getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{account_id}/by-champion/{champId}?api_key={riot_token}")
     return
 
-def getWeeklyRotation(riot_token: str):
-    champions = getJSON(f"https://euw1.api.riotgames.com/lol/platform/v3/champion-rotations?api_key={riot_token}")["freeChampionIds"]
-    champList = getJSON(f"http://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/data/en_US/championFull.json")["keys"]
+async def getWeeklyRotation(riot_token: str):
+    champions = (await getJSON(f"https://euw1.api.riotgames.com/lol/platform/v3/champion-rotations?api_key={riot_token}"))["freeChampionIds"]
+    champList = await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{await getLatestPatch()}/data/en_US/championFull.json")
 
     names = []
     for x in champions:
         
-        names.append(getChampionName_weekly(x, champList))
+        names.append(await getChampionName_weekly(x, champList))
 
     names.sort()
 
     return names
 
-def getSummonerEmotes(summonerEmojiList, summoners):
+async def getSummonerEmotes(summonerEmojiList, summoners):
     return summonerEmojiList[str(summoners[0])] , summonerEmojiList[str(summoners[1])]
 
-def getRuneEmotes(runeList, runes):
+async def getRuneEmotes(runeList, runes):
     runeEmoji = []
     for rune in runes:
             runeEmoji.append(runeList[str(rune)])
     return runeEmoji
 
 
-def getLiveGame(riot_token, account_id, region, summonerEmojiList, runeList):
+async def getLiveGame(riot_token, account_id, region, summonerEmojiList, runeList):
 
-    region_f = checkRegion(region)
+    region_f = await checkRegion(region)
     try:
         isInGame = True
         
-        liveData = getJSON(f'https://{region_f}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{account_id}?api_key={riot_token}')
+        liveData = await getJSON(f'https://{region_f}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{account_id}?api_key={riot_token}')
         gameQueueId = liveData["gameQueueConfigId"]
         print("player is in game")
 
 
-        mapInfo = queueData(gameQueueId)
+        mapInfo = await queueData(gameQueueId)
         playerList = []
         for i in range(10):
             playerList.append(liveData["participants"][i]["summonerName"])
@@ -469,27 +485,27 @@ def getLiveGame(riot_token, account_id, region, summonerEmojiList, runeList):
                 runes = liveData["participants"][i]["perks"]["perkIds"][:-3]
                 summoners = (liveData["participants"][i]["spell1Id"]),(liveData["participants"][i]["spell2Id"])
                 champion_icon = f'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/{champion}.png'
-                champion = getChampionName(champion)
+                champion = await getChampionName(champion)
 
-        summonerEmoji = getSummonerEmotes(summonerEmojiList, summoners)
-        runeEmoji = getRuneEmotes(runeList, runes)
-        runeInfo = getRuneInfo(runes, getJSON(f"http://ddragon.leagueoflegends.com/cdn/{getLatestPatch()}/data/en_US/runesReforged.json"))
+        summonerEmoji = await getSummonerEmotes(summonerEmojiList, summoners)
+        runeEmoji = await getRuneEmotes(runeList, runes)
+        runeInfo = await getRuneInfo(runes, await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{await getLatestPatch()}/data/en_US/runesReforged.json"))
         print(runeInfo)
         gameStartTime = int(str(liveData["gameStartTime"])[:-3])
         print(gameStartTime)
-        gameDuration = timeElapsed(gameStartTime)
+        gameDuration = gameStartTime#timeElapsed(gameStartTime)
 
 
         bansBlue = []
         bansRed = []
         try:
             for i in range(5):
-                bansBlue.append(getChampionName(liveData["bannedChampions"][i]["championId"]))
+                bansBlue.append(await getChampionName(liveData["bannedChampions"][i]["championId"]))
             
             
             #banTeamR = []
             for i in range(5, 10):
-                bansRed.append(getChampionName(liveData["bannedChampions"][i]["championId"]))
+                bansRed.append(await getChampionName(liveData["bannedChampions"][i]["championId"]))
         except:
             print("skipped recursion")
             bansBlue = ["None"]
@@ -511,8 +527,8 @@ def getLiveGame(riot_token, account_id, region, summonerEmojiList, runeList):
     return isInGame, playerList, mapInfo, champion, bans, champion_icon, summonerEmoji, gameDuration, runeEmoji
 
 
-def getMatchHistory(riot_token, puuid, region, count):
-    region = checkRegion(region)
+async def getMatchHistory(riot_token, puuid, region, count):
+    region = await checkRegion(region)
     if region == "euw1" or region == "eun1":
         region_f = "europe"
     elif region == "na1" or region == "la1" or region == "la2":
@@ -525,17 +541,17 @@ def getMatchHistory(riot_token, puuid, region, count):
     #"AMERICAS, EUROPE, ASIA, SEA"
     try:
         matchHistorySuccess = True
-        matchIds = getJSON(f"https://{region_f}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count={count}&api_key={riot_token}")
+        matchIds = await getJSON(f"https://{region_f}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count={count}&api_key={riot_token}")
         matches = []
         for match in matchIds:
-            matches.append(getJSON(f"https://{region_f}.api.riotgames.com/lol/match/v5/matches/{match}?api_key={riot_token}"))
+            matches.append(await getJSON(f"https://{region_f}.api.riotgames.com/lol/match/v5/matches/{match}?api_key={riot_token}"))
         puuid = puuid
         champName = []
         win = []
         role = []
         gameType = []
         for match in matches:
-            gameType.append(queueData(match["info"]["queueId"])[1])
+            gameType.append((await queueData(match["info"]["queueId"]))[1])
             for participants in match["info"]["participants"]:
                     if participants["puuid"] == puuid:
                         champName.append(participants["championName"])
@@ -551,9 +567,9 @@ def getMatchHistory(riot_token, puuid, region, count):
         return matchHistorySuccess, ""
 
 
-def queueData(id):
+async def queueData(id):
 
-    queues = getJSON("https://static.developer.riotgames.com/docs/lol/queues.json")
+    queues = await getJSON("https://static.developer.riotgames.com/docs/lol/queues.json")
     for queue in queues:
         if queue["queueId"] == id:
             mapName = queue["map"]
@@ -567,19 +583,21 @@ def queueData(id):
         
     return mapName, desc, notes
 
-def drawMap(riot_token, gameId, region, mapType, summoner_puuid):
+async def drawMap(riot_token, gameId, region, mapType, summoner_puuid):
     gameLink = f"https://{region}.api.riotgames.com/lol/match/v5/matches/{gameId}/timeline?api_key={riot_token}"
+    print(gameLink)
 
     #participants = gameLink["metadata"]["participants"]
     #print(participants)
 
-    game = getJSON(gameLink)["info"]["frames"]
+    game = (await getJSON(gameLink))["info"]["frames"]
     blueId = [1, 2, 3, 4, 5]
     redId = [6, 7, 8, 9, 10]
     x_blue = []
     x_red = []
     y_blue = []
     y_red = []
+    kills = []
 
     for frame in game:
         for event in frame["events"]:
@@ -629,11 +647,11 @@ def drawMap(riot_token, gameId, region, mapType, summoner_puuid):
 
     return red_kills, blue_kills
 
-def masteryGraph(riot_token, summoner_id, region):
-    region_f = checkRegion(region)
+async def masteryGraph(riot_token, summoner_id, region):
+    region_f = await checkRegion(region)
 
-    mastery_data = getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{summoner_id}?api_key={riot_token}")
-    champList = getJSON(f"http://ddragon.leagueoflegends.com/cdn/13.16.1/data/en_US/championFull.json")["keys"]
+    mastery_data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{summoner_id}?api_key={riot_token}")
+    champList = (await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{await getLatestPatch()}/data/en_US/championFull.json"))["keys"]
 
     mastery_dict = {}
     entry_number = 0
@@ -654,12 +672,13 @@ def masteryGraph(riot_token, summoner_id, region):
     plt.style.use("dark_background")
 
     fig, ax = plt.subplots()
-    ax.bar(list(mastery_dict.keys()), list(mastery_dict.values()), width=0.95, color="red")
+    fig.set_size_inches(5.41,3.5)
+    ax.bar(list(mastery_dict.keys()), list(mastery_dict.values()), width=0.95, color="#6f9cde")
     print(list(mastery_dict.values()))
 
     def turn_to_k(x, pos):
         """The two args are the value and tick position"""
-        return '{:1.0f}K'.format(x*1e-3)
+        return '{:1.0f}k'.format(x*1e-3)
 
     #ax.set(xlabel="Champion", ylabel="Points", title="Mastery Points for User: placeholder")
     ax.set_yticks(np.arange(0, list(mastery_dict.values())[0], step=20000))
@@ -680,8 +699,8 @@ def masteryGraph(riot_token, summoner_id, region):
     img = Image.open(f"src\\files\\SummonerMastery\\{summoner_id}.png")
     left = 0
     top = 10
-    right = 535
-    bottom = 435
+    right = 464
+    bottom = 320
     img_crop = img.crop((left, top, right, bottom))
 
     #img_rotate.show()

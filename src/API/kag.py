@@ -1,8 +1,21 @@
 from API.general import *
 import random as r
 
-def getWebStatus():
-    apiStatus = getJSON_filter("https://kagstats.com/api/status")
+async def getWebStatus():
+    """ Returns various KAGstats API statuses
+    
+    Returns
+    -------
+    playerCount : int
+        Amount of players tracked lifetime
+    kills : int
+        Amount of kills tracked lifetime
+    serverCount : int
+        Servers across which kills have been tracked
+    apiVer : str
+        Current version of KAGstats API
+    """
+    apiStatus = await getJSON("https://kagstats.com/api/status")
 
     playerCount = apiStatus["players"]
     kills = apiStatus["kills"]
@@ -11,7 +24,7 @@ def getWebStatus():
 
     return playerCount, kills, serverCount, apiVer
 
-def searchPlayer(playerName):
+async def searchPlayer(playerName: str):
     blank = playerName.find(" ")
     if blank == -1:
         playerName_f = playerName
@@ -24,7 +37,14 @@ def searchPlayer(playerName):
     except:
         pass
 
-def getPlayerData(playerId):
+async def getPlayerList(playerIds):
+    usernames = []
+    for playerId in playerIds:
+        data = run(getJSON(f"https://kagstats.com/api/players/{playerId}/basic"))
+        usernames.append(data["player"]["charactername"])
+    return usernames
+
+async def getPlayerData(playerId: int):
 
     try:
         data = getJSON_filter(f'https://kagstats.com/api/players/{playerId}/basic')
@@ -38,35 +58,43 @@ def getPlayerData(playerId):
             avatar = f'https://kagstats.com/assets/portrait{r.randint(1,3)}.png'
         killStats = [data["suicides"], data["teamKills"], [data["archerKills"], data["archerDeaths"]], [data["builderKills"], data["builderDeaths"]], [data["knightKills"], data["knightDeaths"]], [data["totalKills"], data["totalDeaths"]]]
         url = f"https://kagstats.com/#/players/{playerId}"
-        return userExists, username, displayname, clantag, hasGold, avatar, killStats, url
+        registered = data["player"]["registered"]
+        return userExists, username, displayname, clantag, hasGold, avatar, killStats, url, registered
     except:
         return None
 
-def getServerList(official: bool):
+async def getServerList(official: bool):
     totalPlayers = 0
     if official:
-        serverList = getJSON("https://kagstats.com/api/servers")
+        serverList = await (getJSON("https://kagstats.com/api/servers"))
         #steam://219830/
         servers = []
         for server in serverList:
             currentServer = getJSON_filter(f'https://api.kag2d.com/server/ip/{server["address"]}/port/{server["port"]}/status')["serverStatus"]
+            print(f'https://api.kag2d.com/server/ip/{server["address"]}/port/{server["port"]}/status')
             if currentServer["currentPlayers"] != 0:
-                servers.append([currentServer["currentPlayers"], (currentServer["serverIPv4Address"], currentServer["serverPort"]), (currentServer["serverName"], currentServer["description"])])
+                players = currentServer["playerList"]
+                playerList = []
+                for player in players:
+                    playerList.append(player["username"])
+                servers.append([(currentServer["currentPlayers"], currentServer["maxPlayers"]), (currentServer["serverIPv4Address"], currentServer["serverPort"]), (currentServer["serverName"], currentServer["description"], currentServer["gameMode"]), playerList])
+                
                 totalPlayers += currentServer["currentPlayers"]
         servers.sort(key=lambda tup: tup[0], reverse=True)
     else:
         servers = []
-        serverList = getJSON("https://api.kag2d.com/v1/game/thd/kag/servers?filters=[{%22field%22:%22current%22,%22op%22:%22eq%22,%22value%22:%22true%22},{%22field%22:%22connectable%22,%22op%22:%22eq%22,%22value%22:true}]&")["serverList"]
+        serverList = (await getJSON("https://api.kag2d.com/v1/game/thd/kag/servers?filters=[{%22field%22:%22current%22,%22op%22:%22eq%22,%22value%22:%22true%22},{%22field%22:%22connectable%22,%22op%22:%22eq%22,%22value%22:true}]&"))["serverList"]
         for server in serverList:
             if server["currentPlayers"] != 0:
-                servers.append([server["currentPlayers"], (server["IPv4Address"], server["port"]), (server["name"], server["description"])])
+                servers.append([(server["currentPlayers"], server["maxPlayers"]), (server["IPv4Address"], server["port"]), (server["name"], server["description"], server["gameMode"]), server["playerList"]])
+                print(server["currentPlayers"])
                 totalPlayers += server["currentPlayers"]
         servers.sort(key=lambda tup: tup[0], reverse=True)
 
     
     return servers, totalPlayers
 
-def getClanList():
+async def getClanList():
     """ Gets list of clans sorted by kagstats (unknown sorting)
 
     Returns
@@ -75,12 +103,13 @@ def getClanList():
             List of lists containing: clan name, clan creation date (epoch), ID of leader, member count, tuple of {leader username, leader display name, leader clantag}
     """
     clans = []
-    clanList = getJSON("https://kagstats.com/api/clans")
+    clanList = await getJSON("https://kagstats.com/api/clans")
     for clan in clanList:
-        clans.append([clan["name"], clan["createdAt"], clan["leaderID"], clan["membersCount"], (clan["leader"]["username"], clan["leader"]["charactername"], clan["leader"]["clantag"])])
+        clans.append([clan["name"], int(clan["createdAt"]/1000), clan["leaderID"], clan["membersCount"], (clan["leader"]["username"], clan["leader"]["charactername"], clan["leader"]["clantag"])])
+    clans.sort(key=lambda x: x[3], reverse=True)
 
     return clans
-def searchClan(clanName: str):
+async def searchClan(clanName: str):
     """ Searches for specific clan name on kagstats API
 
     Parameters
@@ -93,13 +122,19 @@ def searchClan(clanName: str):
         clanData : list
             At respective address contains: clan name, clan creation date (epoch), ID of leader, member count, leader username, leader display name, leader clantag
     """
-    clanList = getJSON("https://kagstats.com/api/clans")
+    clanList = await getJSON("https://kagstats.com/api/clans")
     clanData = [False]
     for clan in clanList:
         if str(clan["name"]).lower() == clanName.lower():
             clanData[0] = True
-            data = clan["name"], clan["createdAt"], clan["leaderID"], clan["membersCount"], clan["leader"]["username"], clan["leader"]["charactername"], clan["leader"]["clantag"]
+            data = clan["name"], int(clan["createdAt"]/1000), clan["leaderID"], clan["membersCount"], clan["leader"]["username"], clan["leader"]["charactername"], clan["leader"]["clantag"], clan["id"]
             clanData.append(data)
+            print(clanData)
     return clanData
 
-
+async def getClanMembers(id: int):
+    members = await getJSON(f"https://kagstats.com/api/clans/{id}/members")
+    ids = []
+    for member in members:
+        ids.append(member["player"]["username"])
+    return ids
