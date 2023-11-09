@@ -25,6 +25,18 @@ async def getWebStatus():
     return playerCount, kills, serverCount, apiVer
 
 async def searchPlayer(playerName: str):
+    """ Searches player on KAGstats
+
+    Parameters
+    ----------
+    playerName : str
+        Player's name to search
+
+    Returns
+    -------
+    id : int
+        First result's ID, None if not found
+    """
     blank = playerName.find(" ")
     if blank == -1:
         playerName_f = playerName
@@ -37,15 +49,54 @@ async def searchPlayer(playerName: str):
     except:
         pass
 
-async def getPlayerList(playerIds):
+async def getPlayerList(playerIds: list):
+    """ Gets a list of player names from list of player IDs
+    
+    Parameters
+    ----------
+    playerIds : list
+        List of player IDs to get usernames for
+    
+    Returns
+    -------
+    usernames : list
+        List of usernames corresponding to IDs (same indexes)
+    """
     usernames = []
     for playerId in playerIds:
-        data = run(getJSON(f"https://kagstats.com/api/players/{playerId}/basic"))
+        data = await getJSON(f"https://kagstats.com/api/players/{playerId}/basic")
         usernames.append(data["player"]["charactername"])
     return usernames
 
 async def getPlayerData(playerId: int):
+    """ Get data for specified player
 
+    Parameters
+    ----------
+    playerId : int
+        ID of player to search
+    
+    Returns
+    -------
+    userExists : bool
+        True if user exists
+    username : str
+        Username/"hard coded" name for player
+    displayname : str
+        Scoreboard display name for player
+    clantag : str
+        Player's clantag
+    hasGold : bool
+        True if player has Gold
+    avatar : str
+        Link to player's forum/KAGstats profile picture - "" if none
+    killStats : list
+        List containing: number of suicides, number of teamkills, tuple of archer kills and archer deaths, tuple of builder kills and builder deaths, tuple of knight kills and knight deaths, tuple of total kills and total deaths
+    url : str
+        KAGstats profile link
+    registered : str
+        Registration date of user e.g. 2017-06-26 07:16:49
+    """
     try:
         data = getJSON_filter(f'https://kagstats.com/api/players/{playerId}/basic')
         userExists = True
@@ -64,6 +115,22 @@ async def getPlayerData(playerId: int):
         return None
 
 async def getServerList(official: bool):
+    """ Gets list of servers containing any players - sorted by highest playercount
+    
+    Parameters
+    ----------
+    official : bool
+        Whether to search official servers only
+    
+    Returns
+    -------
+    servers : list
+        List of list containing: current player count, max player slots, IP address, port, server name, description, gamemode, player list
+
+    totalPlayers : int
+        Total number of players on searched servers
+    
+    """
     totalPlayers = 0
     if official:
         serverList = await (getJSON("https://kagstats.com/api/servers"))
@@ -133,6 +200,18 @@ async def searchClan(clanName: str):
     return clanData
 
 async def getClanMembers(id: int):
+    """ Gets clan member usernames of specified clan
+    
+    Parameters
+    ----------
+    id : int
+        ID of clan to get members from
+    
+    Returns
+    -------
+    ids : list
+        List of member IDs - see getPlayerList()
+    """
     members = await getJSON(f"https://kagstats.com/api/clans/{id}/members")
     ids = []
     for member in members:

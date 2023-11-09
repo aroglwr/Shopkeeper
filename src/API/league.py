@@ -1,9 +1,5 @@
 import random
 import numpy as np
-#from API.general import getJSON_filter as getJSON
-#from API.general import getJSON_local as getJSON_local
-#from API.general import timeElapsed
-#from API.general import unpackList
 from API.general import *
 from re import sub
 from matplotlib import pyplot as plt
@@ -287,7 +283,7 @@ async def getItemName(itemId, itemList):
 
 async def getChampionID(championName):
     champName = await nameFilter(championName)
-    champList = await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{await getLatestPatch()}/data/en_US/champion.json")["data"]
+    champList = (await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{await getLatestPatch()}/data/en_US/champion.json"))["data"]
     try:
         champId = champList[champName]["key"]
         return champId
@@ -394,7 +390,7 @@ async def highestMasteryData(account_id, riot_token, region):
 
 
     region_f = await checkRegion(region)
-    data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{account_id}?api_key={riot_token}")[0]
+    data = (await getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{account_id}?api_key={riot_token}"))[0]
     masteryPoints = data["championPoints"]
     if data["chestGranted"] == True:
         chestGranted = "Yes"

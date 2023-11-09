@@ -19,9 +19,7 @@ async def subsearch(subreddit: str, count: int=20, imageOnly: bool=True):
         List of tuples containing: title, description, author, post link, imagelink
     """
     posts = (await getJSON(f"https://www.reddit.com/r/{subreddit}/top.json?count={count}"))["data"]["children"]
-    
     postsOut = []
-
     for post in posts:
         post = post["data"]
         try:
