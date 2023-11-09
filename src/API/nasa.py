@@ -1,6 +1,7 @@
 from API.general import *
 
-async def apod(nasa_token, hd=False, random=False):
+async def apod_old(nasa_token, hd=False, random=False):
+    """ LEGACY VERSION USE apod() INSTEAD"""
     if random:
         apod_data = await getJSON(f"https://api.nasa.gov/planetary/apod?api_key={nasa_token}&count=1")[0]
     else:
@@ -25,8 +26,43 @@ async def apod(nasa_token, hd=False, random=False):
 
 
     return title, desc, date, author, image
+async def apod(nasa_token, hd=False, random=False):
+    """ Get astro photo of the day from NASA
+    
+    Parameters
+    ----------
+    nasa_token : str
+        NASA API token
+    hd : bool
+        Return HD image or not
+    random : bool
+        Return random APOD, when false returns todays
+    
+    Returns
+    -------
+    title : str
+        Title of APOD (Can be empty)
+    desc : str
+        Description of APOD (Can be empty)
+    date : str
+        Publish date of APOD (Can be empty)
+    author : str
+        Author of APOD image (Can be empty)
+    image : str
+        URL to APOD image
+    """
+    apod_data = await getJSON(f"https://api.nasa.gov/planetary/apod?api_key={nasa_token}" + ("&count=1" if random else ""))
+    if random:
+        apod_data = apod_data[0]
+    title = apod_data.get("title", "No title")
+    desc = apod_data.get("explanation", "No description provided")
+    date = apod_data.get("date", "")
+    author = apod_data.get("copyright", "No author")
+    image = apod_data.get("hdurl" if hd else "url", "")
+    return title, desc, date, author, image
 
 async def earthImage(nasa_token):
+    """ DEPRECATED FUNCTION """
     data = await getJSON(f"https://api.nasa.gov/EPIC/api/natural?api_key={nasa_token}")
     latest = data[-1]
     caption = latest["caption"]
