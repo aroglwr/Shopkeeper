@@ -143,7 +143,6 @@ async def about(interaction: discord.Interaction, user: discord.User):
         user (discord.User): User to grab profile picture of
     """
     await interaction.response.defer(ephemeral=False)
-    
     embed = discord.Embed(title=f"Profile picture for {user.name}", description=f"", color=0x0000ff)
     embed.set_image(url=user.avatar)
     await interaction.followup.send(embed=embed)
@@ -194,7 +193,7 @@ async def wizardposting(interaction: discord.Interaction):
     await interaction.followup.send(embed=embed)
 # Steam Commands
 @tree.command(name = "steamgameinfo", description = "Gets game data from Steam website")
-async def gameid(interaction: discord.Interaction, name_or_id: str):
+async def steamgameinfo(interaction: discord.Interaction, name_or_id: str):
     """steamgameinfo description
 
     Args:
@@ -397,7 +396,7 @@ async def highestmastery(interaction: discord.Interaction, summoner_name: str, r
     else:
         image = "https://raw.communitydragon.org/latest/game/assets/ux/mastery/mastery_icon_default.png"
 
-    embed=discord.Embed(title=f'ChampionMastery.GG', url=f'https://championmastery.gg/summoner?summoner={summoner_data[6]}&region={region.upper()}&lang=en_US', description=f'{await league.getChampionName(highestMastery[3])} with {highestMastery[0]:,} at level {highestMastery[4]}', color=0x0000ff)
+    embed=discord.Embed(title=f'View on ChampionMastery.GG', url=f'https://championmastery.gg/summoner?summoner={summoner_data[6]}&region={region.upper()}&lang=en_US', description=f'{summoner_data[0]} has highest mastery on {await league.getChampionName(highestMastery[3])} with {highestMastery[0]:,} (level {highestMastery[4]})', color=0x0000ff)
     embed.add_field(name=f"Chest Earned?", value=f"{highestMastery[1]}")
     embed.add_field(name="Progress", value=f'{highestMastery[2]}')
     embed.set_author(name=f'{summoner_data[0]} ({region.upper()})', icon_url=image)
@@ -828,7 +827,6 @@ async def status_loop():
 @tasks.loop(minutes=60)
 async def cache_loop():
     await steam.cacheGames()
-    
 
 # Legacy
 @client.event
