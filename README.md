@@ -11,6 +11,7 @@ I recommend using an IDE such as [Visual Studio Code](https://code.visualstudio.
 * Pull various data from Steam API: user & game data
 * View mastery data and live game data for League of Legends
 * Pull stats from [KAGstats](https://kagstats.com) for King Arthur's Gold
+* Retrieve the [astronomy picture of the day](https://apod.nasa.gov/apod/astropix.html)
 
 ## Requirements
 * [Discord.py](https://discordpy.readthedocs.io/en/stable/)
@@ -18,6 +19,10 @@ I recommend using an IDE such as [Visual Studio Code](https://code.visualstudio.
 ### Generating API keys
 * [Steam](https://steamcommunity.com/dev)
 * [Riot](https://developer.riotgames.com/)
+* [NASA](https://api.nasa.gov/)
+
+## Special Thanks
+* [Jamie Williams](https://github.com/JamieLWilliams)
 
 ## License
 This program is licensed under the MIT License.
