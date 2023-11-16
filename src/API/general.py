@@ -7,9 +7,9 @@ from pathlib import Path
 import datetime
 from math import floor
 from time import time
-import aiohttp
-import aiofiles
-from asyncio import run
+
+from aiohttp import ClientSession
+from aiofiles import open
 
 
 async def getJSON(url: str):
@@ -26,7 +26,7 @@ async def getJSON(url: str):
         Dictionary of JSON components
     
     """
-    async with aiohttp.ClientSession() as session:
+    async with ClientSession() as session:
         async with session.get(url) as resp:
             if resp.status == 200:
 
@@ -34,6 +34,20 @@ async def getJSON(url: str):
             else:
                 data = None
     return data
+
+
+async def saveJSON(url: str, filepath: str, client: str=None):
+    """ Gets JSON data from URL and saves to specified filepath
+    """
+   
+    if not client:
+        async with ClientSession() as session:
+            async with session.get(url) as r:
+                data = await r.text()
+        async with open(filepath, mode="w", encoding="utf8") as f:
+            await f.write(data)
+
+
 
 async def getJSON_local(path: str):
     """ Simple get JSON file from relative local path
@@ -49,7 +63,7 @@ async def getJSON_local(path: str):
         Dictionary of JSON components
     
     """
-    async with aiofiles.open(path, mode='r', encoding="utf8") as f:
+    async with open(path, mode='r', encoding="utf8") as f:
         contents = await f.read()
     content = json.loads(contents)
     return content
@@ -108,7 +122,7 @@ def getJSON_local_old(path: str):
     """
     path = os.path.abspath(path)
     p = Path(path)
-    output = getJSON(p.as_uri())
+    output = getJSON_old(p.as_uri())
     return output
 
 def unpackList(list: list, comma: bool):

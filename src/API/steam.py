@@ -1,10 +1,8 @@
 import discord
 import math
-from API.general import getJSON as getJSON
-from API.general import getJSON_local as getJSON_local
-from API.general import dateConvert
+from API.general import *
 
-async def cacheGames():
+async def cacheGames_old():
     import json
     print("caching steam games")
     url = "https://api.steampowered.com/ISteamApps/GetAppList/v1" # http://api.steampowered.com/ISteamApps/GetAppList/v0002
@@ -12,6 +10,21 @@ async def cacheGames():
     with open("src\\files\\gameList.json", "w", encoding="utf-8") as f:
         json.dump(gameList, f, ensure_ascii=False, indent=4)
     print("games cached")
+
+async def cacheGames(filepath: str="src\\files\\gameList.json"):
+    """ Writes full list of Steam Store games to `.json` file
+    
+    Parameters
+    ----------
+    filepath : str
+        Path to `.json` file to write to e.g. files\\gameList.json
+    """
+    url = "https://api.steampowered.com/ISteamApps/GetAppList/v1" # http://api.steampowered.com/ISteamApps/GetAppList/v0002
+    await saveJSON(url, filepath)
+
+
+
+
 
 async def inputType(input):
     """ Determines input type and returns it
@@ -180,18 +193,10 @@ async def getID(input):
     data = await getJSON_local(url)
     
     apps = data["applist"]["apps"]["app"]
-    # Just check
-    #print("Searching for name...")
-
     for app in apps:
         if str(app["name"]).lower() == str(input).lower():
             appid = app["appid"]
             return appid
-
-        #print("error getting id")
-
-
-
 
 
 async def accountInfo(steam_token, userid_input):
@@ -226,7 +231,6 @@ async def accountInfo(steam_token, userid_input):
         rounded_ptime = round(playtime/60)
         username = userData["personaname"]
         creationDate = dateConvert(userData["timecreated"])[3]
-        #lastLogoff = dateConvert(userData["lastlogoff"])[2]
         lastLogoff = userData["lastlogoff"]
         return isPrivate, username, creationDate, rounded_ptime, profilePicture, profileRegion, gamesCount, (player_status, inGame), profileURL, profilePicture_small, lastLogoff
     
