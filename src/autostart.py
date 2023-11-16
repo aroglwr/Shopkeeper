@@ -131,19 +131,7 @@ except:
                 "8105":"<:relentlesshunter:1147246331832840333>",
                 "8106":"<:ultimatehunter:1147246339126738966>"
             }
-        },
-        "games":[
-            "GAME_LIST_HERE"
-        ],
-        "watching":[
-            "WATCHING_LIST_HERE"
-        ],
-        "gifs":[
-            "GIF_LIST_HERE"
-        ],
-        "crunch":[
-            "GIF_LIST_HERE"
-        ]
+        }
     }
     with open("src\\datatest.json", "w", encoding="utf-8") as f:
         json.dump(getData, f, ensure_ascii=False, indent=4)
