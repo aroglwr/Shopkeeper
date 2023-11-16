@@ -5,6 +5,21 @@ from re import sub
 from matplotlib import pyplot as plt
 from PIL import Image
 import urllib.request as rq
+from os import path, makedirs
+
+
+async def cacheLatestPatch(filepath: str="src\\files\\lolLatestPatch.json"):
+    """ Caches all League patch versions sorted by latest first
+    
+    Parameters
+    ----------
+    filepath : str
+        Path to `.json` file to write to e.g. files\\lolLatestPatch.json
+    """
+    url = "https://ddragon.leagueoflegends.com/api/versions.json" # http://api.steampowered.com/ISteamApps/GetAppList/v0002
+    await saveJSON(url, filepath)
+
+
 
 async def getLatestPatch():
     """ Gets latest league patch e.g. 13.16.1
@@ -19,9 +34,10 @@ async def getLatestPatch():
         Latest patch version
 
     """
-    patchList = await getJSON("https://ddragon.leagueoflegends.com/api/versions.json")
+    patchList = await getJSON_local("src\\files\\lolLatestPatch.json")
     
     ver = patchList[0]
+    print(ver)
     return ver
 
 async def checkRegion(region: str):
@@ -585,8 +601,12 @@ async def drawMap(riot_token, gameId, region, mapType, summoner_puuid):
 
     #participants = gameLink["metadata"]["participants"]
     #print(participants)
-
+    folder=f"src\\files\\LeagueMaps\{gameId[:2]}"
     game = (await getJSON(gameLink))["info"]["frames"]
+
+    
+    
+
     blueId = [1, 2, 3, 4, 5]
     redId = [6, 7, 8, 9, 10]
     x_blue = []
@@ -607,39 +627,49 @@ async def drawMap(riot_token, gameId, region, mapType, summoner_puuid):
 
     red_kills = len(x_red)
     blue_kills = len(x_blue)
-    # bypass image restrictions
-    opener=rq.build_opener()
-    opener.addheaders=[('User-Agent','Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1941.0 Safari/537.36')]
-    rq.install_opener(opener)
-
-    if mapType == "5v5 ARAM":
-        url='https://raw.communitydragon.org/latest/game/assets/maps/info/map12/2dlevelminimap.png'
-        print(" is aram")
-    else:
-        url='https://raw.communitydragon.org/latest/game/assets/maps/info/map11/2dlevelminimap.png'
-    local='map'
-    rq.urlretrieve(url,local)
 
 
-    img = Image.open("map")
-    #img.show()
+
+    # check if file exists and if not create
+    if not path.isfile(f"{folder}\{gameId}.png"):
+        if not path.isdir(folder):
+            makedirs(folder, exist_ok=True)
+        # bypass image restrictions
+        opener=rq.build_opener()
+        opener.addheaders=[('User-Agent','Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1941.0 Safari/537.36')]
+        rq.install_opener(opener)
+
+        if mapType == "5v5 ARAM":
+            url='https://raw.communitydragon.org/latest/game/assets/maps/info/map12/2dlevelminimap.png'
+            print(" is aram")
+        else:
+            url='https://raw.communitydragon.org/latest/game/assets/maps/info/map11/2dlevelminimap.png'
+        
+        local='src/files/LeagueMaps/map.png'
+        rq.urlretrieve(url,local)
 
 
-    plt.rcParams["figure.figsize"] = [7.00, 3.50]
-    plt.rcParams["figure.autolayout"] = True
-    im = plt.imread("map")
-    fig, ax = plt.subplots()
-    if mapType == "5v5 ARAM":
-        im = ax.imshow(im, extent=[0, 12300, 0, 12300])
-    else:
-        im = ax.imshow(im, extent=[0, 16000, 0, 16000])
 
-    ax.plot(x_blue, y_blue,  marker=".", markersize=20, markeredgecolor="red", markerfacecolor="blue", linestyle="None")
-    ax.plot(x_red, y_red,  marker=".", markersize=20, markeredgecolor="blue", markerfacecolor="red", linestyle="None")
-    ax.set_axis_off()
-    plt.plot()
-    plt.savefig(f"src\\files\\LeagueMaps\{gameId[:2]}\{gameId}.png", bbox_inches='tight', pad_inches=0)
-    #plt.show()
+        plt.rcParams["figure.figsize"] = [7.00, 3.50]
+        plt.rcParams["figure.autolayout"] = True
+        im = plt.imread(local)
+        fig, ax = plt.subplots()
+        if mapType == "5v5 ARAM":
+            im = ax.imshow(im, extent=[0, 12300, 0, 12300])
+        else:
+            im = ax.imshow(im, extent=[0, 16000, 0, 16000])
+
+        ax.plot(x_blue, y_blue,  marker=".", markersize=20, markeredgecolor="red", markerfacecolor="blue", linestyle="None", alpha=0.5)
+        ax.plot(x_red, y_red,  marker=".", markersize=20, markeredgecolor="blue", markerfacecolor="red", linestyle="None", alpha=0.5)
+        ax.set_axis_off()
+        plt.plot()
+
+
+
+        
+
+        plt.savefig(f"{folder}\{gameId}.png", bbox_inches='tight', pad_inches=0)
+        #plt.show()
 
     return red_kills, blue_kills
 
@@ -689,10 +719,15 @@ async def masteryGraph(riot_token, summoner_id, region):
     #ax.set_ylim(0, list(mastery_dict.values())[0])
     plt.xticks(rotation=30, ha='right')
 
+    # check if folder exists and create if not
+    folder="src\\files\\SummonerMastery"
+    if not path.isdir(folder):
+        makedirs(folder, exist_ok=True)
 
-    plt.savefig(f"src\\files\\SummonerMastery\\{summoner_id}.png", bbox_inches='tight', pad_inches=0, transparent=True)
+    
+    plt.savefig(f"{folder}\\{summoner_id}.png", bbox_inches='tight', pad_inches=0, transparent=True)
 
-    img = Image.open(f"src\\files\\SummonerMastery\\{summoner_id}.png")
+    img = Image.open(f"{folder}\\{summoner_id}.png")
     left = 0
     top = 10
     right = 464
@@ -700,5 +735,5 @@ async def masteryGraph(riot_token, summoner_id, region):
     img_crop = img.crop((left, top, right, bottom))
 
     #img_rotate.show()
-    img_crop.save(fp=f"src\\files\\SummonerMastery\\{summoner_id}.png")
+    img_crop.save(fp=f"{folder}\\{summoner_id}.png")
     return mastery_dict, total_points, total_champs, level_list
