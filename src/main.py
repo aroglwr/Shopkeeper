@@ -10,6 +10,7 @@ import API.reddit as reddit
 import time, datetime
 #import API.hypixel as hp
 import random
+from asyncio import run
 
 
 intents = discord.Intents.default()
@@ -22,15 +23,23 @@ aroglwr = client.fetch_user(231836257334984704)
 
 
 prefix = "!"
-changeStatus = False
-cfg = general.run(general.getJSON_local("src/config.json"))
+changeStatus = True # random status change
+cfg = general.getJSON_local_old("src/config.json")
+data = general.getJSON_local_old("src/data.json")
+# config file stuff
+bot_version = cfg["version"]
 steam_token = cfg["steam_token"]
 riot_token = cfg["riot_token"]
 nasa_token = cfg["nasa_token"]
-summonerEmoji = cfg["riot"]["leagueSummonerSpells"]
-runeEmoji = cfg["riot"]["leagueRunes"]
+
+# data file stuff
+summonerEmoji = data["riot"]["leagueSummonerSpells"]
+runeEmoji = data["riot"]["leagueRunes"]
 startTime = time.time()
-bot_version = cfg["version"]
+faqs = data["faq"]
+
+activity_list = data["games"]
+watch_list = data["watching"]
 
 
 """
@@ -80,7 +89,6 @@ async def on_ready():
     status_loop.start()
     cache_loop.start()
     print(f'We have logged in as {client.user}')
-
 # Generic Commands
 @tree.command(name = "gif", description = "Funny gif generator")
 async def gif(interaction: discord.Interaction):
@@ -130,6 +138,23 @@ async def about(interaction: discord.Interaction):
 
     embed.set_author(name=f'{client.user.display_name} {bot_version}', icon_url=client.user.display_avatar.url)
     #embed.set_thumbnail(url=client.user.display_avatar.url)
+
+    disp_name = str(client.user)[:-5] + " bot"
+    embed.set_footer(text=f'{disp_name}')
+
+    await interaction.followup.send(embed=embed)
+
+@tree.command(name = "faq", description = f"Frequently Asked Questions")
+async def faq(interaction: discord.Interaction):
+    """faq description
+    """
+    
+    await interaction.response.defer(ephemeral=False)
+
+    embed = discord.Embed(title="Frequently Asked Questions", description="Here are a list of frequently asked questions", color=0x0000ff)
+    for question, answer in faqs.items():
+        embed.add_field(name=question, value=answer, inline=False)
+
 
     disp_name = str(client.user)[:-5] + " bot"
     embed.set_footer(text=f'{disp_name}')
@@ -190,6 +215,8 @@ async def wizardposting(interaction: discord.Interaction):
     embed=discord.Embed(title=f"{title} - {author}", url=f"https://reddit.com{link}", description=description, color=0xff5700)
     embed.set_image(url=image)
 
+    disp_name = str(client.user)[:-5] + " bot"
+    embed.set_footer(text=f"{disp_name}")
     await interaction.followup.send(embed=embed)
 # Steam Commands
 @tree.command(name = "steamgameinfo", description = "Gets game data from Steam website")
@@ -420,51 +447,53 @@ async def matchhistory(interaction: discord.Interaction, summoner_name: str, reg
     embed_load=discord.Embed(title=f'', description=f'Please wait', color=0x00afff)
     embed_load.set_author(name=f'Searching Match History', icon_url="https://i.gifer.com/ZKZg.gif")
     update = await interaction.followup.send(embed=embed_load)
+    try:
+        summonerData =  await league.getSummonerData(summoner_name, region, riot_token)
+        matchData = await league.getMatchHistory(riot_token, summonerData[1], region, 5)
+        rankedData = await league.getRankedData(riot_token, summonerData[5], region)
+        print(rankedData)
     
-    summonerData =  await league.getSummonerData(summoner_name, region, riot_token)
-    matchData = await league.getMatchHistory(riot_token, summonerData[1], region, 5)
-    rankedData = await league.getRankedData(riot_token, summonerData[5], region)
-    print(rankedData)
-    
-    if matchData[0] == True:
-        if rankedData[0] == True:
-            hasRank, rankIcon, rankedQueue, rankedTier, rank,  rankedWins, rankedLosses, leaguePoints = rankedData
-            if rankedLosses != 0:
-                winRate = (rankedWins/(rankedLosses + rankedWins)) * 100
-            else:
-                winRate = 100
-                print(rankedWins)
-            if rankedTier not in ("CHALLENGER", "GRANDMASTER", "MASTER"):
-                if leaguePoints < 100:
-                
-                    promoStatus = f"{int(leaguePoints)}% to promotion"
+        if matchData[0] == True:
+            if rankedData[0] == True:
+                hasRank, rankIcon, rankedQueue, rankedTier, rank,  rankedWins, rankedLosses, leaguePoints = rankedData
+                if rankedLosses != 0:
+                    winRate = (rankedWins/(rankedLosses + rankedWins)) * 100
                 else:
-                    promoStatus = "Promoted!"
+                    winRate = 100
+                    print(rankedWins)
+                if rankedTier not in ("CHALLENGER", "GRANDMASTER", "MASTER"):
+                    if leaguePoints < 100:
+                    
+                        promoStatus = f"{int(leaguePoints)}% to promotion"
+                    else:
+                        promoStatus = "Promoted!"
+                else:
+                    promoStatus = ""
+                embed=discord.Embed(title=f'View on OP.GG', url=f'https://www.op.gg/summoners/{region}/{summonerData[6]}', description=f'{summonerData[0]} has {round(winRate, 2)}% WR in {rankedQueue} and is {rankedTier.capitalize()} {rank} {leaguePoints} LP', color=0x0000ff)
+                embed.add_field(name="Progress to Promotion", value=f"`{general.progressBar(20, leaguePoints/100)}` {promoStatus}", inline=False)
+                embed.set_author(name=f'{summonerData[0]} ({region.upper()}) - {rankedWins}W/{rankedLosses}L', icon_url=rankIcon)
             else:
-                promoStatus = ""
-            embed=discord.Embed(title=f'View on OP.GG', url=f'https://www.op.gg/summoners/{region}/{summonerData[6]}', description=f'{summonerData[0]} has {round(winRate, 2)}% WR in {rankedQueue} and is {rankedTier.capitalize()} {rank} {leaguePoints} LP', color=0x0000ff)
-            embed.add_field(name="Progress to Promotion", value=f"`{general.progressBar(20, leaguePoints/100)}` {promoStatus}", inline=False)
-            embed.set_author(name=f'{summonerData[0]} ({region.upper()}) - {rankedWins}W/{rankedLosses}L', icon_url=rankIcon)
-        else:
-            rankIcon = rankedData [1]
-            embed=discord.Embed(title=f'View on OP.GG', url=f'https://www.op.gg/summoners/{region}/{summonerData[6]}', description=f'No ranked data for {summonerData[0]}', color=0x0000ff)
-            embed.set_author(name=f'{summonerData[0]} ({region.upper()})', icon_url=rankIcon)
-        champName, win, role, gameType = matchData[1]
-        
-        
-        embed.set_thumbnail(url=(await league.getSummonerIcon(summonerData[3])))
+                rankIcon = rankedData [1]
+                embed=discord.Embed(title=f'View on OP.GG', url=f'https://www.op.gg/summoners/{region}/{summonerData[6]}', description=f'No ranked data for {summonerData[0]}', color=0x0000ff)
+                embed.set_author(name=f'{summonerData[0]} ({region.upper()})', icon_url=rankIcon)
+            champName, win, role, gameType = matchData[1]
+            
+            
+            embed.set_thumbnail(url=(await league.getSummonerIcon(summonerData[3])))
 
-        for i in range(len(win)):
-            embed.add_field(name="W/L", value=f'{win[i]}')
-            embed.add_field(name="Gamemode", value=f'{gameType[i]}')
-            if role[i] != "Invalid":
-                embed.add_field(name="Champion", value=f'{champName[i]} {role[i]}')
-            else:
-                embed.add_field(name="Champion", value=f'{champName[i]}')
-    else:
-        embed=discord.Embed(title="Could not load match history", description='', color=0x0000ff)
-        embed.set_thumbnail(url="https://static.wikia.nocookie.net/leagueoflegends/images/c/c0/LoL_ping_missing.png")
-        
+            for i in range(len(win)):
+                embed.add_field(name="W/L", value=f'{win[i]}')
+                embed.add_field(name="Gamemode", value=f'{gameType[i]}')
+                if role[i] != "Invalid":
+                    embed.add_field(name="Champion", value=f'{champName[i]} {role[i]}')
+                else:
+                    embed.add_field(name="Champion", value=f'{champName[i]}')
+        #else:
+        #    embed=discord.Embed(title="Could not load match history", description='', color=0x0000ff)
+        #    embed.set_thumbnail(url="https://static.wikia.nocookie.net/leagueoflegends/images/c/c0/LoL_ping_missing.png")
+    except:
+            embed=discord.Embed(title="Could not load match history", description='', color=0x0000ff)
+            embed.set_thumbnail(url="https://static.wikia.nocookie.net/leagueoflegends/images/c/c0/LoL_ping_missing.png")
 
     disp_name = str(client.user)[:-5] + " bot"
     embed.set_footer(text=f'{disp_name}')
@@ -610,6 +639,7 @@ async def gameanalysis(interaction: discord.Interaction, summoner_name: str, reg
 
     summonerData =  await league.getSummonerData(summoner_name, region, riot_token)
     match_history = await league.getMatchHistory(riot_token, summonerData[1], region, game_number)
+    print(match_history)
     match_id= match_history[2][0][game_number-1]
     
     region_f = match_history[2][1]
@@ -660,6 +690,9 @@ async def masteryprofile(interaction: discord.Interaction, summoner_name: str, r
     embed.set_thumbnail(url=icon)
     embed.set_image(url=f"attachment://{summoner_name.lower().replace(' ', '')}.png")
     file = discord.File(f"src\\files\\SummonerMastery\\{summonerData[5]}.png", filename=f"{summoner_name.lower().replace(' ', '')}.png")
+
+    disp_name = str(client.user)[:-5] + " bot"
+    embed.set_footer(text=f"{disp_name}")
 
     await interaction.followup.send(file=file, embed=embed)
 
@@ -811,22 +844,31 @@ async def kagclans(interaction: discord.Interaction, search: str = ""):
 @tasks.loop(minutes=5)
 async def status_loop():
     if changeStatus:
-        activity_list = cfg["games"]
-        status_list = [discord.Status.idle, discord.Status.online, discord.Status.dnd]
+        status_list = [discord.Status.online] #[discord.Status.idle, discord.Status.online, discord.Status.dnd]
         random_status = status_list[random.randint(0,len(status_list)-1)]
-        random_activity = activity_list[random.randint(0,len(activity_list)-1)]
-        activity = discord.Game(name=random_activity, type=random.randint(1,3))
-        await client.change_presence(status=random_status, activity=activity)
-        print(f"Status has changed to {random_activity} with icon {random_status}")
+        if random.randint(0,10) % 2 == 0:
+            
+            random_activity = activity_list[random.randint(0,len(activity_list)-1)]
+            activity = discord.Game(name=random_activity, type=random.randint(1,3))
+            await client.change_presence(status=random_status, activity=activity)
+            print(f"Status has changed to {random_activity} with icon {random_status}")
+        else:
+            random_watch = watch_list[random.randint(0, len(watch_list)-1)]
+            activity = discord.Activity(type=discord.ActivityType.watching, name=random_watch)
+            await client.change_presence(status=random_status, activity=activity)
+            print(f"Status has changed to {random_watch} with icon {random_status}")
     else:
         #activity = discord.Game(name="with the orb", type=1)
         activity = discord.Activity(type=discord.ActivityType.watching, name="the orb")
         await client.change_presence(status=discord.Status.online, activity=activity)
         print("Random change off")
 
-@tasks.loop(minutes=60)
+@tasks.loop(minutes=120)
 async def cache_loop():
+    print("caching")
     await steam.cacheGames()
+    await league.cacheLatestPatch()
+    print("caching done")
 
 # Legacy
 @client.event
