@@ -12,7 +12,7 @@ from aiohttp import ClientSession
 from aiofiles import open
 
 
-async def getJSON(url: str):
+async def getJSON(url: str, header: dict=None, params: dict=None):
     """ Simple get JSON file from URL
 
     Parameters
@@ -26,23 +26,24 @@ async def getJSON(url: str):
         Dictionary of JSON components
     
     """
-    async with ClientSession() as session:
-        async with session.get(url) as resp:
+    async with ClientSession(headers=header) as session:
+        async with session.get(url=url, params=params) as resp:
             if resp.status == 200:
 
                 data= await resp.json()
             else:
+                print(resp.status)
                 data = None
     return data
 
 
-async def saveJSON(url: str, filepath: str, client: str=None):
+async def saveJSON(url: str, filepath: str, client: str=None, header: str=None, params: str=None):
     """ Gets JSON data from URL and saves to specified filepath
     """
    
     if not client:
-        async with ClientSession() as session:
-            async with session.get(url) as r:
+        async with ClientSession(headers=header) as session:
+            async with session.get(url=url, params=params) as r:
                 data = await r.text()
         async with open(filepath, mode="w", encoding="utf8") as f:
             await f.write(data)

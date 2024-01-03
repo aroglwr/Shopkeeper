@@ -12,6 +12,7 @@ if doKeys.lower() == "y":
         getConfig["steam_token"] = (botToken := input("Input Steam API token (leave blank to not change)\n")) or getConfig.get("steam_token", "")
         getConfig["riot_token"] = (botToken := input("Input Riot API token (leave blank to not change)\n")) or getConfig.get("riot_token", "")
         getConfig["nasa_token"] = (botToken := input("Input NASA API token (leave blank to not change)\n")) or getConfig.get("nasa_token", "")
+        getConfig["mal_client"] = (botToken := input("Input MyAnimeList Client ID (leave blank to not change)\n")) or getConfig.get("mal_client", "")
     except:
         print("no config file found\ncreating config.json...")
         getConfig = getJSON_local_old("src\config.json.example")
@@ -19,6 +20,7 @@ if doKeys.lower() == "y":
         getConfig["steam_token"] = (botToken := input("Input Steam API token (leave blank to not add)\n")) or getConfig.get("steam_token", "")
         getConfig["riot_token"] = (botToken := input("Input Riot API token (leave blank to not add)\n")) or getConfig.get("riot_token", "")
         getConfig["nasa_token"] = (botToken := input("Input NASA API token (leave blank to not add)\n")) or getConfig.get("nasa_token", "")
+        getConfig["mal_client"] = (botToken := input("Input MyAnimeList Client ID (leave blank to not add)\n")) or getConfig.get("mal_client", "")
 
     with open("src\\testcfg.json", "w", encoding="utf-8") as f:
         json.dump(getConfig, f, ensure_ascii=False, indent=4)

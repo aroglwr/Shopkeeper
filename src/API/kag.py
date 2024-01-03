@@ -217,3 +217,38 @@ async def getClanMembers(id: int):
     for member in members:
         ids.append(member["player"]["username"])
     return ids
+
+
+# leaderboard section
+
+async def getLeaderboard(classIn: str="global", monthly: bool=False):
+    """ Gets leaderboard data for specified class (or total) with monthly option
+
+    Parameters
+    ----------
+    classIn : str
+        Specfic leaderboard class e.g. Knight, Archer, Builder - not case sensitive - leave empty for total
+    monthly : bool
+        True for monthly leaderboard
+    Returns
+    -------
+    leaderboard : list
+    
+    playerCount : int
+    
+    """
+
+    classIn = classIn.lower()
+    classType = "total" if classIn == "global" else classIn
+
+    classUrl = f"/{classType.lower()}" if classType != "total" else ""
+
+    print(f"https://kagstats.com/api/leaderboard{classUrl}" if not monthly else f"https://kagstats.com/api/leaderboard/monthly{classUrl}")
+    data = await getJSON(f"https://kagstats.com/api/leaderboard{classUrl}" if not monthly else f"https://kagstats.com/api/leaderboard/monthly{classUrl}")
+    players = data["leaderboard"]
+    leaderboard = []
+    for player in players:
+        leaderboard.append([player["player"]["clantag"], player["player"]["username"], player["player"]["id"], player[f"{classType}Kills"], player[f"{classType}Deaths"]])
+        
+    return leaderboard, len(leaderboard)
+

@@ -4,5 +4,5 @@
     "steam_token":"STEAM_TOKEN_HERE",
     "riot_token": "RIOT_TOKEN_HERE",
     "nasa_token":"NASA_TOKEN_HERE",
-
+    "mal_client":"MAL_CLIENT_ID_HERE"
 }

@@ -17,7 +17,7 @@ async def cacheLatestPatch(filepath: str="src\\files\\lolLatestPatch.json"):
         Path to `.json` file to write to e.g. files\\lolLatestPatch.json
     """
     url = "https://ddragon.leagueoflegends.com/api/versions.json" # http://api.steampowered.com/ISteamApps/GetAppList/v0002
-    await saveJSON(url, filepath)
+    await saveJSON(url=url, filepath=filepath)
 
 
 
@@ -62,7 +62,7 @@ async def checkRegion(region: str):
 
     return region_f
 
-async def getSummonerData(summoner_name: str, region: str, riot_token: str):
+async def getSummonerData_old(summoner_name: str, region: str, riot_token: str):
     """ Returns various summoner data
 
     Parameters
@@ -92,8 +92,13 @@ async def getSummonerData(summoner_name: str, region: str, riot_token: str):
         Formatted version of summoner name for use in URLs
     """
 
+    #riot_id = await getJSON(f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/jeet/roma?api_key={riot_token}")
+
+
     region_f = await checkRegion(region)
     data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}?api_key={riot_token}")
+    print(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}?api_key={riot_token}")
+    #data = f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{riot_id}?api_key={riot_token}"
     summoner_puuid = data["puuid"]
     summoner_name_case = data["name"]
     name_url = summoner_name_case.replace(" ", "%20")
@@ -101,6 +106,34 @@ async def getSummonerData(summoner_name: str, region: str, riot_token: str):
     summoner_level = data["summonerLevel"]
     account_id = data["id"]
     return summoner_name_case, summoner_puuid, summoner_puuid, summoner_icon, summoner_level, account_id, name_url
+
+
+async def getSummonerData(game_name: str, tagline: str, region: str, riot_token: str):
+    """ Returns various summoner data
+    """
+
+    if not tagline:
+        tagline = region
+
+    #print(f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tagline[1:] if tagline[0] == '#' else tagline}?api_key={riot_token}")
+    riot_data = (await getJSON(f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tagline[1:] if tagline[0] == '#' else tagline}?api_key={riot_token}"))
+    puuid, gameName, tagLine = riot_data["puuid"], riot_data["gameName"], riot_data["tagLine"]
+
+    region_f = await checkRegion(region)
+    
+    #data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}?api_key={riot_token}")
+    print(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}?api_key={riot_token}")
+    data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}?api_key={riot_token}")
+
+
+    summoner_puuid = data["puuid"]
+    summoner_name_case = data["name"]
+    name_url = summoner_name_case.replace(" ", "%20")
+    summoner_icon = data["profileIconId"]
+    summoner_level = data["summonerLevel"]
+    account_id = data["id"]
+    
+    return summoner_name_case, summoner_puuid, summoner_puuid, summoner_icon, summoner_level, account_id, name_url, gameName, tagLine
 
 async def getRankedData(riot_token: str, summoner_id: str, region: str):
     """ Gets most ranked data for summoner. Attempts to find solo/duo -> flex if no solo/duo data

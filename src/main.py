@@ -7,15 +7,20 @@ import API.league as league
 import API.kag as kag
 import API.nasa as nasa
 import API.reddit as reddit
+import API.chesscom as chess
+#import API.opencv as camera
+import API.mal as mal
 import time, datetime
 #import API.hypixel as hp
 import random
 from asyncio import run
+from typing import Literal
 
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+intents.presences = True
 
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
@@ -25,12 +30,15 @@ aroglwr = client.fetch_user(231836257334984704)
 prefix = "!"
 changeStatus = True # random status change
 cfg = general.getJSON_local_old("src/config.json")
+games = general.getJSON_local_old("src/files/aroglwrGameList.json")
 data = general.getJSON_local_old("src/data.json")
+
 # config file stuff
 bot_version = cfg["version"]
 steam_token = cfg["steam_token"]
 riot_token = cfg["riot_token"]
 nasa_token = cfg["nasa_token"]
+mal_client = cfg["mal_client"]
 
 # data file stuff
 summonerEmoji = data["riot"]["leagueSummonerSpells"]
@@ -38,7 +46,7 @@ runeEmoji = data["riot"]["leagueRunes"]
 startTime = time.time()
 faqs = data["faq"]
 
-activity_list = data["games"]
+activity_list = games#data["games"]
 watch_list = data["watching"]
 
 
@@ -93,7 +101,7 @@ async def on_ready():
 @tree.command(name = "gif", description = "Funny gif generator")
 async def gif(interaction: discord.Interaction):
     await interaction.response.defer()
-    gifList = cfg["gifs"]
+    gifList = data["gifs"]
     gifOut = gifList[random.randint(0,len(gifList)-1)] 
     await interaction.followup.send(gifOut)
     #await interaction.response.send_message(gifOut)
@@ -101,7 +109,7 @@ async def gif(interaction: discord.Interaction):
 async def crunch(interaction: discord.Interaction):
     
     await interaction.response.defer()
-    gifList = cfg["crunch"]
+    gifList = data["crunch"]
     gifOut = gifList[random.randint(0,len(gifList)-1)]
     await interaction.followup.send(gifOut)
 
@@ -149,7 +157,7 @@ async def faq(interaction: discord.Interaction):
     """faq description
     """
     
-    await interaction.response.defer(ephemeral=False)
+    await interaction.response.defer(ephemeral=True)
 
     embed = discord.Embed(title="Frequently Asked Questions", description="Here are a list of frequently asked questions", color=0x0000ff)
     for question, answer in faqs.items():
@@ -161,7 +169,35 @@ async def faq(interaction: discord.Interaction):
 
     await interaction.followup.send(embed=embed)
 
-@tree.command(name = "profilepicture", description = f"Gets profile picture of user")
+@tree.context_menu(name="Profile information!")
+async def getProfile(interaction: discord.Interaction, user: discord.Member):
+    await interaction.response.defer(ephemeral=True)
+
+    member = user.guild.get_member(user.id)
+
+    embed = discord.Embed(title=f"Showing data for {user.name}{f' (bot)' if user.bot else ''}", description=f"", color=0x0000ff)
+    embed.set_thumbnail(url=user.avatar)
+    
+    embed.add_field(name="Roles", value=", ".join([role.mention for role in user.roles]), inline=False)
+    
+    embed.add_field(name="Join Date", value=f"<t:{int(user.created_at.timestamp())}>", inline=False)
+    activities = member.activities
+    if activities is not None:
+        for activity in activities:
+            if isinstance(activity, discord.activity.Spotify):
+                embed.add_field(name="Listening to", value=f"{activity.title} by {activity.artist}")
+            if isinstance(activity, discord.activity.Game):
+                embed.add_field(name="Activity", value=f"Playing {activity.name}")
+            if isinstance(activity, discord.activity.Activity):
+                embed.add_field(name="Activity", value=f"{'Playing' if activity.type == discord.ActivityType.playing else ('Watching' if activity.type == discord.ActivityType.watching else 'Streaming')} {activity.name}")
+
+    else:
+        activity_text = "None"
+        embed.add_field(name="Activity", value=activity_text, inline=False)
+    await interaction.followup.send(embed=embed)
+
+
+'''@tree.command(name = "profilepicture", description = f"Gets profile picture of user")
 async def about(interaction: discord.Interaction, user: discord.User):
     """profilepicture description
     Args:
@@ -171,7 +207,7 @@ async def about(interaction: discord.Interaction, user: discord.User):
     embed = discord.Embed(title=f"Profile picture for {user.name}", description=f"", color=0x0000ff)
     embed.set_image(url=user.avatar)
     await interaction.followup.send(embed=embed)
-
+'''
 
 @tree.command(name = "osu", description = "Command for osu!")
 async def osu(interaction: discord.Interaction):
@@ -378,34 +414,62 @@ async def achievements(interaction: discord.Interaction, username: str, name_or_
     #print(messageOut)
     await interaction.followup.send(embed=embed)
 
+"""@tree.command(name=  "aroglwr_pic", description = "take aroglwr pic rn")
+async def aroglwr_pic(interaction: discord.Interaction):
+    await interaction.response.defer()
+    photo_path = await camera.takePicture()
+
+    file = discord.File(photo_path, filename="aroglwr_cam.png")
+
+    embed = discord.Embed(title="aroglwr picture !", description="look at him :3 <:jald:1178062543651082291>")
+
+    embed.set_image(url="attachment://aroglwr_cam.png")
+
+    disp_name = str(client.user)[:-5] + " bot"
+    embed.set_footer(text=f'{disp_name}')
+    await interaction.followup.send(file=file, embed=embed)"""
+
 # League Commands
 @tree.command(name = "masterysearch", description = "Search a League of Legends summoner's mastery data by champion")
-async def masterysearch(interaction: discord.Interaction, summoner_name: str, region: str, champion: str):
+async def masterysearch(interaction: discord.Interaction, region: str, game_name: str, champion: str, tagline: str=None):
     """masterysearch description
 
     Args:
-        summoner_name (str): Name of summoner
         region(str): Where that summoner is registered in e.g. euw, na, kr
+        game_name (str): Name of account
+        tagline (str): Account tagline e.g. #EUW
+        
         champion (str): Name of champion
     """
     await interaction.response.defer()
-    summoner_data = await league.getSummonerData(summoner_name, region, riot_token)
-    masterySearch = await league.masterySearch(summoner_data[5], champion, riot_token, region)
-    if masterySearch[4] >= 4:
-        image = f'https://raw.communitydragon.org/latest/game/assets/ux/mastery/mastery_icon_{masterySearch[4]}.png'
-    else:
-        image = "https://raw.communitydragon.org/latest/game/assets/ux/mastery/mastery_icon_default.png"
-    
-    embed=discord.Embed(title=f'ChampionMastery.GG', url=f'https://championmastery.gg/summoner?summoner={summoner_data[6]}&region={region.upper()}&lang=en_US', description=f'{await league.getChampionName(masterySearch[3])} with {masterySearch[0]:,} at level {masterySearch[4]}', color=0x0000ff)
-    embed.add_field(name=f"Chest Earned?", value=f"{masterySearch[1]}")
-    embed.add_field(name="Progress", value=f'{masterySearch[2]}')
-    embed.set_author(name=f'{summoner_data[0]} ({region.upper()})', icon_url=image)
-    embed.set_thumbnail(url=f'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/{masterySearch[3]}.png')
+    try:
+        summoner_data = await league.getSummonerData(game_name, tagline, region, riot_token)
+        summonerExists=True
+        masterySearch = await league.masterySearch(summoner_data[5], champion, riot_token, region)
+        
+        if summonerExists:
+            if masterySearch[4] >= 4:
+                image = f'https://raw.communitydragon.org/latest/game/assets/ux/mastery/mastery_icon_{masterySearch[4]}.png'
+            else:
+                image = "https://raw.communitydragon.org/latest/game/assets/ux/mastery/mastery_icon_default.png"
 
+            embed=discord.Embed(title=f'ChampionMastery.GG', url=f'https://championmastery.gg/summoner?summoner={summoner_data[6]}&region={region.upper()}&lang=en_US', description=f'{await league.getChampionName(masterySearch[3])} with {masterySearch[0]:,} at level {masterySearch[4]}', color=0x0000ff)
+            embed.add_field(name=f"Chest Earned?", value=f"{masterySearch[1]}")
+            embed.add_field(name="Progress", value=f'{masterySearch[2]}')
+            embed.set_author(name=f'{summoner_data[7]}#{summoner_data[8]} ({region.upper()})', icon_url=image)
+            embed.set_thumbnail(url=f'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/{masterySearch[3]}.png')
+    except:
+        try:
+            if summonerExists:
+                embed=discord.Embed(title=f"Data could not be found for {summoner_data[0]} ({region.upper()}) on {champion}")
+        except:
+            embed=discord.Embed(title=f"Could not find summoner {game_name} {'(' + region.upper() + ')' if tagline is None else '#' + tagline.upper()}", description='', color=0x0000ff)
+        embed.set_thumbnail(url="https://static.wikia.nocookie.net/leagueoflegends/images/c/c0/LoL_ping_missing.png")
     disp_name = str(client.user)[:-5] + " bot"
     embed.set_footer(text=f'{disp_name}')
     await interaction.followup.send(embed=embed)
 
+''' i dont like this command - all info can be found using masteryprofile + masterysearch anyway
 @tree.command(name = "highestmastery", description = "Displays user's highest League of Legends champion mastery")
 async def highestmastery(interaction: discord.Interaction, summoner_name: str, region: str):
     """highestmastery description
@@ -431,10 +495,10 @@ async def highestmastery(interaction: discord.Interaction, summoner_name: str, r
 
     disp_name = str(client.user)[:-5] + " bot"
     embed.set_footer(text=f'{disp_name}')
-    await interaction.followup.send(embed=embed)
+    await interaction.followup.send(embed=embed)'''
 
 @tree.command(name = "match_history", description = "Displays user's League of Legends match history")
-async def matchhistory(interaction: discord.Interaction, summoner_name: str, region: str):
+async def matchhistory(interaction: discord.Interaction, region: str, game_name: str, tagline: str=None):
     """matchhistory description
 
     Args:
@@ -448,7 +512,7 @@ async def matchhistory(interaction: discord.Interaction, summoner_name: str, reg
     embed_load.set_author(name=f'Searching Match History', icon_url="https://i.gifer.com/ZKZg.gif")
     update = await interaction.followup.send(embed=embed_load)
     try:
-        summonerData =  await league.getSummonerData(summoner_name, region, riot_token)
+        summonerData =  await league.getSummonerData(game_name, tagline, region, riot_token)
         matchData = await league.getMatchHistory(riot_token, summonerData[1], region, 5)
         rankedData = await league.getRankedData(riot_token, summonerData[5], region)
         print(rankedData)
@@ -469,7 +533,7 @@ async def matchhistory(interaction: discord.Interaction, summoner_name: str, reg
                         promoStatus = "Promoted!"
                 else:
                     promoStatus = ""
-                embed=discord.Embed(title=f'View on OP.GG', url=f'https://www.op.gg/summoners/{region}/{summonerData[6]}', description=f'{summonerData[0]} has {round(winRate, 2)}% WR in {rankedQueue} and is {rankedTier.capitalize()} {rank} {leaguePoints} LP', color=0x0000ff)
+                embed=discord.Embed(title=f'View on OP.GG', url=f'https://www.op.gg/summoners/{region}/{summonerData[6]}', description=f'{summonerData[0]} has {winRate:.2f}% WR in {rankedQueue} and is {rankedTier.capitalize()} {rank} {leaguePoints} LP', color=0x0000ff)
                 embed.add_field(name="Progress to Promotion", value=f"`{general.progressBar(20, leaguePoints/100)}` {promoStatus}", inline=False)
                 embed.set_author(name=f'{summonerData[0]} ({region.upper()}) - {rankedWins}W/{rankedLosses}L', icon_url=rankIcon)
             else:
@@ -571,7 +635,7 @@ async def weeklyrotation(interaction: discord.Interaction):
     await interaction.followup.send(embed=embed)
 
 @tree.command(name = "leaguelivegame", description = "Gets live game data for a League of Legends player")
-async def leaguelivegame(interaction: discord.Interaction, summoner_name: str, region: str):
+async def leaguelivegame(interaction: discord.Interaction, region: str, game_name: str, tagline: str=None):
     """leaguelivegame description
 
     Args:
@@ -586,7 +650,7 @@ async def leaguelivegame(interaction: discord.Interaction, summoner_name: str, r
     update = await interaction.followup.send(embed=embed_load)
 
     try:
-        summoner_data = await league.getSummonerData(summoner_name, region, riot_token)
+        summoner_data = await league.getSummonerData(game_name, tagline, region, riot_token)
         liveGameData = await league.getLiveGame(riot_token, summoner_data[5], region, summonerEmoji, runeEmoji)    
 
 
@@ -622,7 +686,7 @@ async def leaguelivegame(interaction: discord.Interaction, summoner_name: str, r
     
 
 @tree.command(name = "gameanalysis", description= "Gets an analysis of a single League of Legends game")
-async def gameanalysis(interaction: discord.Interaction, summoner_name: str, region: str, game_number: int = 1):
+async def gameanalysis(interaction: discord.Interaction, region: str, game_name: str, tagline: str=None, game_number: int = 1):
     """gameanalysis description
 
     Args:
@@ -637,7 +701,7 @@ async def gameanalysis(interaction: discord.Interaction, summoner_name: str, reg
     #update = await interaction.followup.send(file=file, embed=embed_load)
 
 
-    summonerData =  await league.getSummonerData(summoner_name, region, riot_token)
+    summonerData =  await league.getSummonerData(game_name, tagline, region, riot_token)
     match_history = await league.getMatchHistory(riot_token, summonerData[1], region, game_number)
     print(match_history)
     match_id= match_history[2][0][game_number-1]
@@ -665,7 +729,7 @@ async def gameanalysis(interaction: discord.Interaction, summoner_name: str, reg
     await interaction.followup.send(file=file, embed=embed)
 
 @tree.command(name = "masteryprofile", description = "Gets mastery info for a League of Legends accounts")
-async def masteryprofile(interaction: discord.Interaction, summoner_name: str, region: str):
+async def masteryprofile(interaction: discord.Interaction, region: str, game_name: str, tagline: str=None):
     """masteryprofile description
 
     Args:
@@ -676,20 +740,19 @@ async def masteryprofile(interaction: discord.Interaction, summoner_name: str, r
 
     mastery_icons = ["<:Mastery_5:1151232094245245010>","<:Mastery_6:1151232090034147328>","<:Mastery_7:1151232092500398220>"]
     
-
-    summonerData = await league.getSummonerData(summoner_name, region, riot_token)
+    summonerData = await league.getSummonerData(game_name, tagline, region, riot_token)
+    tagline = region if not tagline else tagline
     icon = await league.getSummonerIcon(summonerData[3])#
-    print(icon)
     masteryData = await league.masteryGraph(riot_token, summonerData[5], region)
     level_list = masteryData[3]
     highest = masteryData[0]
-    embed = discord.Embed(title="Mastery Profile", description=f"Showing data for {summonerData[0]}", color=0x0000ff)
+    embed = discord.Embed(title="Mastery Profile", description=f"Showing data for {summonerData[7]}#{summonerData[8]}", color=0x0000ff)
     
     embed.add_field(name="Highest", value=f"{list(highest.keys())[0]} - {list(highest.values())[0]:,}\n{list(highest.keys())[1]} - {list(highest.values())[1]:,}\n{list(highest.keys())[2]} - {list(highest.values())[2]:,}")
     embed.add_field(name="Statistics", value=f"{level_list.count(7)}x {mastery_icons[2]} {level_list.count(6)}x {mastery_icons[1]} {level_list.count(5)}x {mastery_icons[0]} \nTotal Points: {masteryData[1]:,}\nAverage Points - {int(masteryData[1]/masteryData[2]):,}")
     embed.set_thumbnail(url=icon)
-    embed.set_image(url=f"attachment://{summoner_name.lower().replace(' ', '')}.png")
-    file = discord.File(f"src\\files\\SummonerMastery\\{summonerData[5]}.png", filename=f"{summoner_name.lower().replace(' ', '')}.png")
+    embed.set_image(url=f"attachment://{game_name.lower().replace(' ', '')}{tagline.lower()}.png")
+    file = discord.File(f"src\\files\\SummonerMastery\\{summonerData[5]}.png", filename=f"{game_name.lower().replace(' ', '')}{tagline.lower()}.png")
 
     disp_name = str(client.user)[:-5] + " bot"
     embed.set_footer(text=f"{disp_name}")
@@ -840,6 +903,102 @@ async def kagclans(interaction: discord.Interaction, search: str = ""):
     update= await update.edit(embed=embed)
 
 
+
+@tree.command(name = "kagleaderboard", description="Gets King Arthur's Gold Clan Information")
+async def kagleaderboard(interaction: discord.Interaction, filter: Literal["Knight", "Builder", "Archer"]="Global",monthly: bool = False):
+
+    await interaction.response.defer()
+    
+    # Loading panel
+    embed_load=discord.Embed(title=f'', description=f'Please wait', color=0xFFD700)
+    embed_load.set_author(name=f'Searching Leaderboard', icon_url="https://i.gifer.com/ZKZg.gif")
+    update = await interaction.followup.send(embed=embed_load)
+
+    if monthly and filter == "Global":
+        embed= discord.Embed(title="Total monthly leaderboard is not supported", value="Please try a specified class or non-monthly", color=0xFFD700)
+    else:
+
+
+        apiData = await kag.getWebStatus()
+        lb_data = await kag.getLeaderboard(classIn=filter, monthly=monthly)
+        lb_players = lb_data[0]
+        embed = discord.Embed(title="Leaderboard", description="description", color=0xFFD700)
+        for i, player in enumerate(lb_players[:5]):
+            embed.add_field(name=f"#{i+1}", value=f"{player[0]} {player[1]}")
+            embed.add_field(name=f"Kills/Deaths", value=f"{player[3]}/{player[4]}")
+            embed.add_field(name=f"KDR", value=f"{(player[3]/player[4]):2.f if player[4] != 0 else player[3]}")
+        
+    
+    disp_name = str(client.user)[:-5] + " bot"
+    embed.set_footer(text=f'Tracking {apiData[1]:,} kills by {apiData[0]:,} players across {apiData[2]} servers\n{disp_name} powered by KAGstats {apiData[3]}')
+    # Send the embed update
+    update= await update.edit(embed=embed)
+
+@tree.command(name = "chessprofile", description="Gets Chess.com information")
+async def chessprofile(interaction: discord.Interaction, username: str):
+    await interaction.response.defer()
+    try:
+        avatar, url, displayname, country, last_online, joined, status, is_streamer, verified, league, title, stream_url = await chess.getUser(username)
+        streamerDesc = ""
+        if is_streamer:
+            streamerDesc = f" \n[View livestream]({stream_url})"
+
+        embed = discord.Embed(title=f"View profile for {title}{displayname} ({country[-2:]})", description=f"Last online <t:{last_online}:R> joined <t:{joined}:D>{streamerDesc}", url=url, color=0x4a3c27)
+        
+        stats = await chess.getStats(username)
+        embed.set_thumbnail(url=avatar)
+        for stat in stats:
+            embed.add_field(name=stat[0][6:].capitalize(), value=f"Rating: {stat[1][0]}\nW/L/D: {stat[1][1]}/{stat[1][2]}/{stat[1][3]}")
+    except:
+        embed = discord.Embed(title="User not found", description=f'Could not find user with name "{username}"', color=0x4a3c27)
+    embed.set_author(url="https://images.chesscomfiles.com/uploads/v1/images_users/tiny_mce/PedroPinhata/phpkXK09k.png", name="Via Chess.com")
+    disp_name = str(client.user)[:-5] + " bot"
+    embed.set_footer(text=f'{disp_name}')
+    await interaction.followup.send(embed=embed)
+
+
+'''@tree.command(name = "myanimelist", description="Gets MAL user info")
+async def myanimelist(interaction: discord.Interaction, username: str):
+    await interaction.response.defer()
+
+    statuses = ["watching",  "on_hold", "dropped", "plan_to_watch", "completed"]
+    anime_list, count = await mal.user_list(username, mal_client)
+
+    desc_text = ""
+    for status in statuses:
+        amount = count.get(status)
+        status = status.replace('_', ' ')
+        status = status.capitalize()
+        desc_text += f"{status}: {amount}\n"
+    embed = discord.Embed(title=f"Anime for {username}", description=desc_text, url="https://google.com", color=0x4a3c27)
+    
+    for anime in anime_list:
+        embed.add_field(name=f"{anime[0]}", value=f"a", inline=False)
+
+
+    disp_name = str(client.user)[:-5] + " bot"
+    embed.set_footer(text=f'{disp_name}')
+    await interaction.followup.send(embed=embed)
+'''
+@tree.command(name = "anime_search", description="Gets anime info from MAL")
+async def anime_search(interaction: discord.Interaction, name: str):
+    await interaction.response.defer()
+
+    id = await mal.anime_search(name, mal_client)
+    name, description, episode_count, studios, genres, runtime, users, name_en, name_jp, url, img = await mal.anime_details(id, mal_client)
+
+    embed = discord.Embed(title=f"{name} ({name_en}/{name_jp})", description=description, url=url, color=0x2e51a2)
+    embed.set_thumbnail(url=img)
+    
+    embed.add_field(name="Genres", value=general.unpackList(genres, True))
+    embed.add_field(name="Studio",value=general.unpackList(studios, True))
+    embed.add_field(name="Total Episodes", value=episode_count)
+
+    disp_name = str(client.user)[:-5] + " bot"
+    embed.set_footer(text=f'{disp_name}')
+    await interaction.followup.send(embed=embed)
+
+
 # Loop
 @tasks.loop(minutes=5)
 async def status_loop():
@@ -875,14 +1034,6 @@ async def cache_loop():
 async def on_message(message):
     if message.author == client.user:
         return
-
-    '''if message.content.startswith(f'{prefix}gameid'):
-        
-        
-
-        
-        await message.channel.send(f'{steam.detailOutput(gameid)}')'''
-
     if message.content.startswith(f'{prefix}gameid'):
 
         print(f'User: {message.author} ran {message.content} in server: {message.guild.name}(id:{message.guild.id}) and channel: {message.channel.mention}')
@@ -904,7 +1055,7 @@ async def on_message(message):
         activity = discord.Game(name="with Steam API", type=3)
         await client.change_presence(status=discord.Status.idle, activity=activity)"""
     if isinstance(message.channel,discord.DMChannel):
-        gifs = cfg["gifs"]
+        gifs = data["gifs"]
         emojis = ["😳","🥶","💀","😎","😦"]
         list=[]
         if random.randint(0,1) == 1:
