@@ -76,7 +76,42 @@ async def anime_search(search, client_id):
     id = info["id"]
     return id 
 
-async def anime_details(anime_id, client_id):
+async def anime_details(anime_id: int, client_id: str):
+    """ Gets detailed information for specified anime from MyAnimeList
+
+    Parameters
+    ----------
+    anime_id : int
+        MyAnimeList ID (see `anime_search()`)
+    client_id : str
+        MyAnimeList client ID
+
+    Returns
+    -------
+    name : str
+        Official title
+    description : str
+        Synopsis
+    episode_count : int
+        Amount of episodes
+    studios : list
+        List of studios
+    genres : list
+        List of genres
+    runtime : tuple
+        (Start date, end date)
+    users : int
+        Amount of users with anime on their profile
+    name_en : str
+        English name
+    name_jp : str
+        Japanese name
+    url : str
+        Link to MAL page
+    img : str
+        URL to poster image
+    
+    """
     header = {'X-MAL-CLIENT-ID': client_id}
     
     data =await getJSON(url=f"https://api.myanimelist.net/v2/anime/{anime_id}?fields=id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,num_list_users,num_scoring_users,created_at,updated_at,media_type,status,genres,num_episodes,start_season,broadcast,source,rating,pictures,background,studios,statistics", header=header)
@@ -105,8 +140,3 @@ async def anime_details(anime_id, client_id):
     url = f"https://myanimelist.net/anime/{anime_id}/{name.replace(' ', '_')}"
 
     return name, description, episode_count, studios, genres, runtime, users, name_en, name_jp, url, img
-
-from asyncio import run
-
-print(run(anime_search("jujutsu kaisen", "e20c3d12b3361e85aa5e72192fbccb4e")))
-run(anime_details("40748", "e20c3d12b3361e85aa5e72192fbccb4e"))
