@@ -1,5 +1,6 @@
 import discord
 from discord import app_commands
+#from discord import FFmpegPCMAudio
 from discord.ext import tasks
 import API.general as general
 import API.steam as steam
@@ -24,7 +25,6 @@ intents.presences = True
 
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
-aroglwr = client.fetch_user(231836257334984704)
 
 
 prefix = "!"
@@ -649,34 +649,30 @@ async def leaguelivegame(interaction: discord.Interaction, region: str, game_nam
     embed_load.set_author(name=f'Fetching Live Game Info', icon_url="https://i.gifer.com/ZKZg.gif")
     update = await interaction.followup.send(embed=embed_load)
 
-    try:
-        summoner_data = await league.getSummonerData(game_name, tagline, region, riot_token)
-        liveGameData = await league.getLiveGame(riot_token, summoner_data[5], region, summonerEmoji, runeEmoji)    
 
-
-        if liveGameData[0] == True:
-            embed=discord.Embed(title=f'View on OP.GG (Spectate)', url=f'https://www.op.gg/summoners/{region}/{summoner_data[6]}/ingame', description=f'{summoner_data[0]} is playing {liveGameData[3]} in {liveGameData[2][1]} on {liveGameData[2][0]}\nGame started <t:{liveGameData[7]}:R>', color=0x0000ff) # Summoner has been in game for {liveGameData[7][0]} minutes {liveGameData[7][1]} seconds
-            #primaryTree = liveGameData[8][1][:4]
-            #secondaryTree = general.unpackList(liveGameData[8][1][4:6])
-            runeEmojis = liveGameData[8]
-            embed.add_field(name="Spells", value=f'{liveGameData[6][0]} {liveGameData[6][1]}')
-            embed.add_field(name="Runes", value=f'{runeEmojis[0]} {runeEmojis[1]} {runeEmojis[2]}{runeEmojis[3]}\n{runeEmojis[4]} {runeEmojis[5]}')
-            #embed.add_field(name="Banned Champions", value=f'{general.unpackList(liveGameData[4][0], True) + general.unpackList(liveGameData[4][1], True)}', inline=False)
-            embed.add_field(name="Banned Champions", value=f'{general.unpackList(liveGameData[4][0] + liveGameData[4][1], True)}', inline=False)
-            embed.add_field(name="", value=f'')
-            embed.add_field(name="", value=f'')
-
-            embed.set_author(name=f'{summoner_data[0]} ({region.upper()})', icon_url=(await league.getSummonerIcon(summoner_data[3])))
-            embed.set_thumbnail(url=liveGameData[5])
-            
-            
+    summoner_data = await league.getSummonerData(game_name, tagline, region, riot_token)
+    liveGameData = await league.getLiveGame(riot_token, summoner_data[5], region, summonerEmoji, runeEmoji)    
+    if liveGameData[0] == True:
+        embed=discord.Embed(title=f'View on OP.GG (Spectate)', url=f'https://www.op.gg/summoners/{region}/{summoner_data[6]}/ingame', description=f'{summoner_data[0]} is playing {liveGameData[3]} in {liveGameData[2][1]} on {liveGameData[2][0]}\nGame started <t:{liveGameData[7]}:R>', color=0x0000ff) # Summoner has been in game for {liveGameData[7][0]} minutes {liveGameData[7][1]} seconds
+        #primaryTree = liveGameData[8][1][:4]
+        #secondaryTree = general.unpackList(liveGameData[8][1][4:6])
+        runeEmojis = liveGameData[8]
+        embed.add_field(name="Spells", value=f'{liveGameData[6][0]} {liveGameData[6][1]}')
+        embed.add_field(name="Runes", value=f'{runeEmojis[0]} {runeEmojis[1]} {runeEmojis[2]}{runeEmojis[3]}\n{runeEmojis[4]} {runeEmojis[5]}')
+        print(general.unpackList(list(liveGameData[4][0] + liveGameData[4][1]), True))
+        print(list(liveGameData[4][0] + liveGameData[4][1]))
         
-        else:
-            embed=discord.Embed(title="Summoner is not in game", description='', color=0x0000ff)
-            embed.set_thumbnail(url="https://static.wikia.nocookie.net/leagueoflegends/images/c/c0/LoL_ping_missing.png")
-    except:
-        embed=discord.Embed(title="Could not find summoner", color=0x0000ff)
+        embed.add_field(name="Banned Champions", value=f'{general.unpackList((liveGameData[4][0] + liveGameData[4][1]), True)}', inline=False)
+        embed.add_field(name="", value=f'')
+        embed.add_field(name="", value=f'')
+        embed.set_author(name=f'{summoner_data[0]}#{summoner_data[8]} ({region.upper()})', icon_url=(await league.getSummonerIcon(summoner_data[3])))
+        embed.set_thumbnail(url=liveGameData[5])
+    else:
+        embed=discord.Embed(title="Summoner is not in game", description='', color=0x0000ff)
         embed.set_thumbnail(url="https://static.wikia.nocookie.net/leagueoflegends/images/c/c0/LoL_ping_missing.png")
+    #except:
+    #    embed=discord.Embed(title="Could not find summoner", color=0x0000ff)
+    #    embed.set_thumbnail(url="https://static.wikia.nocookie.net/leagueoflegends/images/c/c0/LoL_ping_missing.png")
 
     disp_name = str(client.user)[:-5] + " bot"
     embed.set_footer(text=f'{disp_name}')
@@ -997,7 +993,35 @@ async def anime_search(interaction: discord.Interaction, name: str):
     disp_name = str(client.user)[:-5] + " bot"
     embed.set_footer(text=f'{disp_name}')
     await interaction.followup.send(embed=embed)
+"""
+@tree.command(name = "join", description="Joins voice channel")
+async def join(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    if interaction.user.voice:
+        channel = interaction.user.voice.channel
+        voice = await channel.connect()
+        source = FFmpegPCMAudio("src/files/Audio/hotrel room.mp3")
+        
+        player = voice.play(source)
+        await interaction.followup.send(f"Joining {interaction.user.voice.channel.name}")
+        
+    else:
+        await interaction.followup.send("User not in voice channel")
 
+@tree.command(name = "pausetoggle", description="Pause music")
+async def pause_toggle(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    voice = discord.utils.get(client.voice_clients, guild=interaction.guild)
+    if voice.is_playing():
+        voice.pause()
+        await interaction.followup.send(f"Pausing sound")
+    elif voice.is_paused():
+        voice.resume()
+        await interaction.followup.send(f"Resuming sound")
+        
+    else:
+        await interaction.followup.send("NO")
+"""
 
 # Loop
 @tasks.loop(minutes=5)
@@ -1021,6 +1045,10 @@ async def status_loop():
         activity = discord.Activity(type=discord.ActivityType.watching, name="the orb")
         await client.change_presence(status=discord.Status.online, activity=activity)
         print("Random change off")
+
+
+
+
 
 @tasks.loop(minutes=120)
 async def cache_loop():

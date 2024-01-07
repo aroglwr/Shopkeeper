@@ -17,3 +17,6 @@ src/API/mastery_generator.py
 src/data.json
 src/API/opencv.py
 src/API/testing.py
+src/voice_test.py
+src/API/wanikani.py
+src/API/youtube.py

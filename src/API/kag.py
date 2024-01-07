@@ -215,7 +215,7 @@ async def getClanMembers(id: int):
     members = await getJSON(f"https://kagstats.com/api/clans/{id}/members")
     ids = []
     for member in members:
-        ids.append(member["player"]["username"])
+        ids.append(member["player"]["charactername"])
     return ids
 
 

@@ -37,7 +37,6 @@ async def getLatestPatch():
     patchList = await getJSON_local("src\\files\\lolLatestPatch.json")
     
     ver = patchList[0]
-    print(ver)
     return ver
 
 async def checkRegion(region: str):
@@ -97,7 +96,7 @@ async def getSummonerData_old(summoner_name: str, region: str, riot_token: str):
 
     region_f = await checkRegion(region)
     data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}?api_key={riot_token}")
-    print(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}?api_key={riot_token}")
+    #print(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}?api_key={riot_token}")
     #data = f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{riot_id}?api_key={riot_token}"
     summoner_puuid = data["puuid"]
     summoner_name_case = data["name"]
@@ -353,24 +352,14 @@ async def getChampionData(championName: str):
     champList = (await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{latest_patch}/data/en_US/championFull.json"))["data"]
     try:
         champData = champList[str(champName_f)]
-        #print(champData)
         champion_name = champData["name"]
-        #print(champion_name)
         champion_title = champData["title"]
-        #print(champion_title)
         champion_lore = champData["lore"]
-        #print(champion_lore)
         champion_icon = f'http://ddragon.leagueoflegends.com/cdn/{latest_patch}/img/champion/{champName_f}.png'
         ""
-        #print(champion_icon)
         champion_splash = f'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-splashes/{champData["key"]}/{champData["key"]}000.jpg'
-        #print(champion_splash)
         champion_tags = ""
-        """for tag in champData["tags"]:
-            if tag != champData["tags"][len(champData["tags"])-1]:
-                champion_tags += tag + ", "
-            else:
-                champion_tags += tag"""
+
         champion_tags = unpackList(champData["tags"], True)
         champion_stats = champData["stats"]
         champion_resource = champData["partype"]

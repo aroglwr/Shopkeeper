@@ -131,7 +131,10 @@ def unpackList(list: list, comma: bool):
     if comma == True:
         for word in list:
                 if word != list[len(list)-1]:
-                    string += word + ", "
+                    try:
+                        string += word + ", "
+                    except:
+                        pass
                 else:
                     string += word
     else:
