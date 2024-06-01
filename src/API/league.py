@@ -115,18 +115,19 @@ async def getSummonerData(game_name: str, tagline: str, region: str, riot_token:
         tagline = region
 
     #print(f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tagline[1:] if tagline[0] == '#' else tagline}?api_key={riot_token}")
-    riot_data = (await getJSON(f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tagline[1:] if tagline[0] == '#' else tagline}?api_key={riot_token}"))
+    riot_data = (await getJSON(f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name.replace(' ', '%20')}/{tagline[1:] if tagline[0] == '#' else tagline}?api_key={riot_token}"))
     puuid, gameName, tagLine = riot_data["puuid"], riot_data["gameName"], riot_data["tagLine"]
 
     region_f = await checkRegion(region)
     
     #data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}?api_key={riot_token}")
     print(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}?api_key={riot_token}")
+
     data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}?api_key={riot_token}")
 
 
     summoner_puuid = data["puuid"]
-    summoner_name_case = data["name"]
+    summoner_name_case = riot_data["gameName"]
     name_url = summoner_name_case.replace(" ", "%20")
     summoner_icon = data["profileIconId"]
     summoner_level = data["summonerLevel"]
@@ -214,8 +215,8 @@ async def nameFilter(champName):
     champName = champName.replace(" ", "").replace("'", "")
     if champName.lower() == "wukong":
         champName = "monkeyking"
-    exempt = ["LeeSin","KogMaw","MasterYi","MissFortune","MonkeyKing","RekSai","TahmKench","TwistedFate", "KSante"]
-    exempt_lower = ["leesin","kogmaw","masteryi","missfortune","monkeyking","reksai","tahmkench","twistedfate", "ksante"]
+    exempt = ["LeeSin","KogMaw","MasterYi","MissFortune","MonkeyKing","RekSai","TahmKench","TwistedFate", "KSante", "XinZhao", "JarvanIV"]
+    exempt_lower = ["leesin","kogmaw","masteryi","missfortune","monkeyking","reksai","tahmkench","twistedfate", "ksante", "xinzhao", "jarvaniv"]
 
     if champName.lower() not in exempt_lower:
         champName_out = champName.capitalize()
@@ -327,6 +328,9 @@ async def getRuneInfo(runes: list, runeList: list):
 async def getItemName(itemId, itemList):
 
     itemName = itemList[f"{itemId}"]["name"]
+    if itemList[f"{itemId}"].get("requiredAlly", False) == "Ornn":
+        itemName = f"{itemName} <:ornn_circle:1207422369325514833>"
+    
     return itemName
 
 async def getChampionID(championName):
@@ -338,7 +342,7 @@ async def getChampionID(championName):
     except:
         return NameError
 
-async def getChampionData(championName: str):
+async def getChampionData(championName: str, nameOnly: bool=False):
     """
      
     Parameters
@@ -353,10 +357,13 @@ async def getChampionData(championName: str):
     try:
         champData = champList[str(champName_f)]
         champion_name = champData["name"]
+        if nameOnly:
+            return champion_name
         champion_title = champData["title"]
         champion_lore = champData["lore"]
         champion_icon = f'http://ddragon.leagueoflegends.com/cdn/{latest_patch}/img/champion/{champName_f}.png'
         ""
+        
         champion_splash = f'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-splashes/{champData["key"]}/{champData["key"]}000.jpg'
         champion_tags = ""
 
@@ -375,6 +382,8 @@ async def getChampionData(championName: str):
             tip = None
         return champion_name, champion_title, champion_lore, champion_icon, champion_splash, champion_tags, champion_stats, champion_resource, tip, champion_skins, champName_f
     except:
+        if nameOnly:
+            return "Invalid Champion Name"
         return "Invalid Champion Name", "", None, None, None, None, None, None, None, None, None
 
 async def getItemData(itemName: str):
@@ -403,11 +412,20 @@ async def getItemData(itemName: str):
             itemSell = itemList[item]["gold"]["sell"]
             itemDesc = itemList[item]["plaintext"]
             itemName_f = itemList[item]["name"]
+            ornn = False
+
+            if itemList[item].get("requiredAlly", False) == "Ornn":
+                ornn = True
+
+                
+
+
+            
             try:
                 for component in itemList[item]["from"]:
                     print(component)
                     build_path.append(await getItemName(component, itemList))
-                
+
             except:
                 pass
             try:
@@ -421,11 +439,14 @@ async def getItemData(itemName: str):
     itemIcon = f'http://ddragon.leagueoflegends.com/cdn/{latest_patch}/img/item/{itemId}'
     print(itemIcon)
     
-    return itemIcon, itemCost, itemDesc, itemName_f, build_path, builds_into, itemCombine, itemSell
+    return itemIcon, itemCost, itemDesc, itemName_f, build_path, builds_into, itemCombine, itemSell, ornn
 
 
 async def highestMasteryData(account_id, riot_token, region):
 
+    #
+    # OUTDATED
+    #
 
     region_f = await checkRegion(region)
     data = (await getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{account_id}?api_key={riot_token}"))[0]
@@ -445,31 +466,31 @@ async def highestMasteryData(account_id, riot_token, region):
     
     return masteryPoints, chestGranted, tokenStatus, championId, championLevel
 
-async def masterySearch(account_id, champion_name, riot_token, region):
+async def masterySearch(puuid, champion_name, riot_token, region):
 
 
     region_f = await checkRegion(region)
     champId = await getChampionID(champion_name)
-    mastery_data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{account_id}/by-champion/{champId}?api_key={riot_token}")
+    mastery_data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}/by-champion/{champId}?api_key={riot_token}")
 
-    
+    print(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}/by-champion/{champId}?api_key={riot_token}")
+
     masteryPoints = mastery_data["championPoints"]
-    if mastery_data["chestGranted"] == True:
-        chestGranted = "Yes"
-    else:
-        chestGranted = "No"
+    tenPlus = 0
+
+    # REMOVED FEATURE :(
+    #if mastery_data["chestGranted"] == True:
+    #    chestGranted = "Yes"
+    #else:
+    #    chestGranted = "No"
     
-    if mastery_data["championLevel"] == 7:
-        tokenStatus = "Complete"
-    elif mastery_data["championLevel"] <= 4:
-        tokenStatus = f'{mastery_data["championPoints"]:,}/{(mastery_data["championPoints"]+mastery_data["championPointsUntilNextLevel"]):,}'
-    else:
-        tokenStatus = f'{mastery_data["tokensEarned"]} tokens'
     
     championId = mastery_data["championId"]
     championLevel = mastery_data["championLevel"]
+    last_played = mastery_data.get("lastPlayTime", None)
+    last_level = mastery_data["championPointsUntilNextLevel"]
 
-    return masteryPoints, chestGranted, tokenStatus, championId, championLevel
+    return masteryPoints, championId, championLevel, last_played, last_level
 
 def masteryFull(account_id, champion_name, riot_token, region):
     """empty function returns None"""
@@ -588,12 +609,13 @@ async def getMatchHistory(riot_token, puuid, region, count):
             gameType.append((await queueData(match["info"]["queueId"]))[1])
             for participants in match["info"]["participants"]:
                     if participants["puuid"] == puuid:
-                        champName.append(participants["championName"])
+                        champName.append(await getChampionData(participants["championName"], nameOnly=True))
                         if participants["win"] == True:
                             win.append(":white_check_mark: Win")
                         else:
                             win.append(":x: Loss")
                         role.append(participants["individualPosition"].capitalize())
+        
         return matchHistorySuccess, [champName, win, role, gameType], [matchIds, region_f]
 
     except:
@@ -695,10 +717,11 @@ async def drawMap(riot_token, gameId, region, mapType, summoner_puuid):
 
     return red_kills, blue_kills
 
-async def masteryGraph(riot_token, summoner_id, region):
+async def masteryGraph(riot_token, puuid, region):
     region_f = await checkRegion(region)
 
-    mastery_data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/{summoner_id}?api_key={riot_token}")
+    mastery_data = await getJSON(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}?api_key={riot_token}")
+    print(f"https://{region_f}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}?api_key={riot_token}")
     champList = (await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{await getLatestPatch()}/data/en_US/championFull.json"))["keys"]
 
     mastery_dict = {}
@@ -747,9 +770,9 @@ async def masteryGraph(riot_token, summoner_id, region):
         makedirs(folder, exist_ok=True)
 
     
-    plt.savefig(f"{folder}\\{summoner_id}.png", bbox_inches='tight', pad_inches=0, transparent=True)
+    plt.savefig(f"{folder}\\{puuid}.png", bbox_inches='tight', pad_inches=0, transparent=True)
 
-    img = Image.open(f"{folder}\\{summoner_id}.png")
+    img = Image.open(f"{folder}\\{puuid}.png")
     left = 0
     top = 10
     right = 464
@@ -757,5 +780,49 @@ async def masteryGraph(riot_token, summoner_id, region):
     img_crop = img.crop((left, top, right, bottom))
 
     #img_rotate.show()
-    img_crop.save(fp=f"{folder}\\{summoner_id}.png")
+    img_crop.save(fp=f"{folder}\\{puuid}.png")
     return mastery_dict, total_points, total_champs, level_list
+
+
+async def searchRune(searchQuery: str):
+    """
+    Parameters
+    ----------
+    searchQuery : str
+        Name of rune to search; not sensitive to caps or spaces
+    Returns
+    -------
+    found : bool
+        True if found rune
+    name : str
+        Formatted rune name
+    """
+    
+
+
+    runeList = f"http://ddragon.leagueoflegends.com/cdn/{await getLatestPatch()}/data/en_US/runesReforged.json"
+
+    runeData = await getJSON(runeList)
+
+    found = False
+    name, description, icon, id_ = None, None, None, None
+    for tree in runeData:
+        for slot in tree["slots"]:
+            for rune in slot["runes"]:
+                if searchQuery.lower().replace(" ", "") == rune["key"].lower():
+                    found = True
+                    description = sub("<.*?>", "", rune["longDesc"].replace("<br>", "\n"))
+                    name = rune["name"]
+                    icon = f"https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/{rune['icon'].lower()}"
+                    id_ = rune["id"]
+                    perk_tree = tree["name"]
+                    perk_tree_icon = f"https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/{tree['icon'].lower()}"
+                    break
+            else:
+                continue
+            break
+        else:
+            continue
+        break
+
+    return found, name, description, icon, id_, perk_tree, perk_tree_icon
