@@ -1,4 +1,12 @@
 # Shopkeeper
+
+
+<p align="center">
+  <img src="https://cdn.discordapp.com/avatars/1042455483702849677/af839e1fbe77deab0ad768b8a2a13569.png" />
+</p>
+
+
+
 ## What is this?
 This is a Discord bot built on [Discord.py](https://discordpy.readthedocs.io/en/stable/)
 
