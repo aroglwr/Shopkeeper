@@ -1,5 +1,8 @@
-# Shopkeeper
+<br>
 
+<p align="center">
+  <img src="https://cdn.discordapp.com/banners/1042455483702849677/fa2e1953f19bf119c323cce3b29ce261.png?size=480" />
+</p>
 
 <p align="center">
   <img src="https://cdn.discordapp.com/avatars/1042455483702849677/af839e1fbe77deab0ad768b8a2a13569.png" />
