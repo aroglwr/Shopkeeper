@@ -397,6 +397,7 @@ async def getItemData(itemName: str):
     """
     itemName = itemName.replace(" ", "")
     latest_patch = await getLatestPatch()
+    print(f"http://ddragon.leagueoflegends.com/cdn/{latest_patch}/data/en_US/item.json")
     itemList = (await getJSON(f"http://ddragon.leagueoflegends.com/cdn/{latest_patch}/data/en_US/item.json"))["data"]
     # http://ddragon.leagueoflegends.com/cdn/13.16.1/img/item/1018.png
     itemId = ""
@@ -411,6 +412,7 @@ async def getItemData(itemName: str):
             itemCombine = itemList[item]["gold"]["base"]
             itemSell = itemList[item]["gold"]["sell"]
             itemDesc = itemList[item]["plaintext"]
+            itemDetail = itemList[item]["description"]
             itemName_f = itemList[item]["name"]
             ornn = False
 
@@ -439,7 +441,7 @@ async def getItemData(itemName: str):
     itemIcon = f'http://ddragon.leagueoflegends.com/cdn/{latest_patch}/img/item/{itemId}'
     print(itemIcon)
     
-    return itemIcon, itemCost, itemDesc, itemName_f, build_path, builds_into, itemCombine, itemSell, ornn
+    return itemIcon, itemCost, itemDesc, itemName_f, build_path, builds_into, itemCombine, itemSell, ornn, itemDetail
 
 
 async def highestMasteryData(account_id, riot_token, region):

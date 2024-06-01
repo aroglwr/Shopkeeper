@@ -579,17 +579,53 @@ async def itemdata(interaction: discord.Interaction, item_name: str):
     Args:
         item_name (str): Name of item
     """
+    
+    rep = {
+        "<mainText>": "",
+        "</mainText>": "",
+        "<stats>": "",
+        "</stats>": "",
+        "<attention>": "",
+        "</attention>": "",
+        "<br>": "\n",
+        "<passive>": "**",
+        "</passive>": "**",
+        "<scaleAP>": "",
+        "</scaleAP>": "",
+        "<ornnBonus>": "**",
+        "</ornnBonus>": "**",
+        "<attackSpeed>": "",
+        "</attackSpeed>": "",
+        "<li>": "\n",
+        "<healing>": "",
+        "</healing>": "",
+        "<goldGain>": "",
+        "</goldGain>": "",
+        "<OnHit>": "",
+        "</OnHit>": "",
+        "<rarityMythic>": "",
+        "</rarityMythic>": "",
+        "<rarityLegendary>": "",
+        "</rarityLegendary>": ""
+    }
+    
     await interaction.response.defer()
     try:
-        itemIcon, itemCost, itemDesc, itemName_f, build_path, builds_into, itemCombine, itemSell, ornn = await league.getItemData(item_name)
-        print(ornn)
+        itemIcon, itemCost, itemDesc, itemName_f, build_path, builds_into, itemCombine, itemSell, ornn, itemDetail = await league.getItemData(item_name)
+
+        # desc filtering
+        for item in rep:
+            itemDetail = itemDetail.replace(item, rep[item])
+        itemDetail = itemDetail.split("<active>", 1)[0]
+
+        # ornn check! :)
         if ornn:
             itemName_f = f'{itemName_f} <:ornn_circle:1207422369325514833>'
+
         if itemDesc == "":
-            
-            embed=discord.Embed(title=f'Data for {itemName_f}', color=0xff7518)
+            embed=discord.Embed(title=f'Data for {itemName_f}', description=itemDetail, color=0xff7518)
         else:
-            embed=discord.Embed(title=f'Data for {itemName_f}', description=f'{itemDesc}.', color=0xff7518)
+            embed=discord.Embed(title=f'Data for {itemName_f}', description=f'{itemDesc}.\n{itemDetail}', color=0xff7518)
         embed.add_field(name="Cost", value=f"{itemCost} <:gold:1148709055087521883>")
         embed.add_field(name="Combine Cost", value=f"{itemCombine} <:gold:1148709055087521883>")
         embed.add_field(name="Sell Value", value=f"{itemSell} <:gold:1148709055087521883> ({int(itemSell*100/itemCost)}%)")
@@ -722,7 +758,6 @@ async def masteryprofile(interaction: discord.Interaction, region: str, game_nam
     
     summonerData = await league.getSummonerData(game_name, tagline, region, riot_token)
 
-    print(summonerData)
 
 
     tagline = region if not tagline else tagline
@@ -734,7 +769,7 @@ async def masteryprofile(interaction: discord.Interaction, region: str, game_nam
     embed = discord.Embed(title="Mastery Profile", description=f"Showing data for {summonerData[7]}#{summonerData[8]}", color=0x0000ff)
     
     embed.add_field(name="Highest", value=f"{list(highest.keys())[0]} - {list(highest.values())[0]:,}\n{list(highest.keys())[1]} - {list(highest.values())[1]:,}\n{list(highest.keys())[2]} - {list(highest.values())[2]:,}")
-    embed.add_field(name="Statistics", value=f"{level_list.count(7)}x {mastery_icons[2]} {level_list.count(6)}x {mastery_icons[1]} {level_list.count(5)}x {mastery_icons[0]} \nTotal Points: {masteryData[1]:,}\nAverage Points - {int(masteryData[1]/masteryData[2]):,}")
+    embed.add_field(name="Statistics", value=f"{sum(j >= 10 for j in masteryData[3])}x <:Mastery_10:1246451010583662623> (level 10+) \nTotal Points: {masteryData[1]:,}\nAverage Points - {int(masteryData[1]/masteryData[2]):,}")
     embed.set_thumbnail(url=icon)
     embed.set_image(url=f"attachment://{game_name.lower().replace(' ', '')}{tagline.lower()}.png")
     file = discord.File(f"src\\files\\SummonerMastery\\{summonerData[1]}.png", filename=f"{game_name.lower().replace(' ', '')}{tagline.lower()}.png")
@@ -891,7 +926,6 @@ async def kagclans(interaction: discord.Interaction, search: str = ""):
         clan = await kag.searchClan(search)
         if clan[0]:
             clanInfo = clan[1]
-            print(clanInfo[7])
             members = await kag.getClanMembers(clanInfo[7])
             embed=discord.Embed(title="View on KAGstats.com", url=f"https://kagstats.com/#/clans/{clanInfo[7]}", description=f"Showing stats for {clanInfo[0]}", color=0xFFD700)
             embed.set_thumbnail(url=(await kag.getPlayerData(clanInfo[2]))[5])
